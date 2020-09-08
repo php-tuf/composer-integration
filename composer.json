@@ -1,0 +1,38 @@
+{
+    "name": "php-tuf/tuf-composer-integration",
+    "description": "POC. Explorations in securing Composer with php-tuf.",
+    "type": "composer-plugin",
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://packagist.org",
+            "tuf-url": "https://whatever.com/tuf"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/php-tuf/php-tuf.git"
+        }
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mike Baynton",
+            "email": "mike@mbaynton.com"
+        },
+        {
+            "name": "Please add/edit over time as appropriate"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php-tuf/php-tuf": "dev-composer-integration-fake"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tuf\\ComposerIntegration\\": "src/"
+        }
+    },
+    "extra": {
+        "class": "Tuf\\ComposerIntegration\\Plugin"
+    }
+}
