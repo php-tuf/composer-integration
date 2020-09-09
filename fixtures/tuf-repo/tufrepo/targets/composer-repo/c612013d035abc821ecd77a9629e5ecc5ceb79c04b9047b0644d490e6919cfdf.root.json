@@ -1,0 +1,9 @@
+{
+    "packages": [],
+    "notify": "https://packagist.org/downloads/%package%",
+    "notify-batch": "https://packagist.org/downloads/",
+    "metadata-url": "/p2/%package%.json",
+    "search": "https://packagist.org/search.json?q=%query%&type=%type%",
+    "list": "https://packagist.org/packages/list.json",
+    "providers-api": "https://packagist.org/providers/%package%.json"
+}

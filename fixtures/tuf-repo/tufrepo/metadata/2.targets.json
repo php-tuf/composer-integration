@@ -1,0 +1,27 @@
+{
+ "signatures": [
+  {
+   "keyid": "35c00c84cd0fd666d0feecb18b45449a4f516654ab7dcee5970617890e53d158",
+   "sig": "4a0899f106cc74ccdba6d47563ada5614d6f51dca102a34bc223e46eef5e6fbb3efb79b2f189a1c32563e3c60597cc0a26435721d8447fb70f490dc6fbe42804"
+  }
+ ],
+ "signed": {
+  "_type": "targets",
+  "delegations": {
+   "keys": {},
+   "roles": []
+  },
+  "expires": "2020-12-09T22:00:51Z",
+  "spec_version": "1.0.0",
+  "targets": {
+   "composer-repo/root.json": {
+    "hashes": {
+     "sha256": "c612013d035abc821ecd77a9629e5ecc5ceb79c04b9047b0644d490e6919cfdf",
+     "sha512": "35aac3e8e89d45df56bc28fcc444dcbea95781339e0cf09747fdc85f3327ffac731b0033d3bcb2447ab7083c19376d14981d1cad5fdd2d5d83cb287f59b2b7ec"
+    },
+    "length": 379
+   }
+  },
+  "version": 2
+ }
+}
