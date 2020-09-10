@@ -1,5 +1,5 @@
 {
-    "name": "php-tuf/tuf-composer-integration",
+    "name": "php-tuf/composer-integration",
     "description": "POC. Explorations in securing Composer with php-tuf.",
     "type": "composer-plugin",
     "repositories": [
@@ -25,7 +25,11 @@
     ],
     "minimum-stability": "stable",
     "require": {
+        "composer-plugin-api": "^2.0",
         "php-tuf/php-tuf": "dev-composer-integration-fake"
+    },
+    "conflict": {
+        "zaporylie/composer-drupal-optimizations": "*"
     },
     "autoload": {
         "psr-4": {

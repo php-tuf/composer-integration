@@ -2,7 +2,7 @@
  "signatures": [
   {
    "keyid": "eccb1d2638b9cfda0eed972e04c0d5249b39c2da2e3b7aef048f4184a913f01c",
-   "sig": "f1eb34c06a1a296b988140dc42e5a19c43abd1b8096725fa22e8bcb352d3ae0bb3786f7990d7aab82f4d7b9681715c5f3055333f73a7ad13284149a059e7cb0a"
+   "sig": "70bd8d07d5d45d49593c732c8192b9613c7103f7f53faabfc5540523f66f835a538591757cb3b32987b6d981d43434607f81c82a0f255dfe53f99b7a2c0c990c"
   }
  ],
  "signed": {
@@ -10,10 +10,10 @@
   "expires": "2020-09-16T14:33:41Z",
   "meta": {
    "targets.json": {
-    "version": 6
+    "version": 5
    }
   },
   "spec_version": "1.0.0",
-  "version": 6
+  "version": 5
  }
 }

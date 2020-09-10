@@ -1,0 +1,33 @@
+{
+    "name": "php-tuf/example-composer-project",
+    "description": "Demo of a secured root composer.json",
+    "type": "project",
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://localhost:8080/composer-repo/root.json",
+            "allow_ssl_downgrade": true,
+            "tuf": {
+                "url": "http://localhost:8080/tuf-repo/tufrepo",
+                "initial-root-file": "tuf-root.json",
+                "unsafely-update-root-if-necessary": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "../../"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/php-tuf/php-tuf.git"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "drupal/core": "^8.0",
+        "php-tuf/composer-integration": "dev-main"
+    },
+    "config": {
+        "secure-http": false
+    }
+}

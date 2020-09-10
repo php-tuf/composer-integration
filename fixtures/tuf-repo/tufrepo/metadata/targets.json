@@ -2,7 +2,7 @@
  "signatures": [
   {
    "keyid": "35c00c84cd0fd666d0feecb18b45449a4f516654ab7dcee5970617890e53d158",
-   "sig": "5841406595eb2eeeef9498ecc408e0e1754c421292adcccc04a67329e3562c51468660090aab308b418e1abe23a05e7dcaa489047a062a28f04d78139506090f"
+   "sig": "8d9e251abcf16274852cc88cc7c244d980ba82b63ced4d17cf2b8caa432b86ef3b1394ba8c295da01e6605e6938594246c7a54d60b301bf64962902597de3407"
   }
  ],
  "signed": {
@@ -16,19 +16,19 @@
   "targets": {
    "composer-repo/p2/drupal/core.json": {
     "hashes": {
-     "sha256": "4f80071a4f6a094cac99ccf0a6e4564e94df8b4dea70d3c03ea340f2a4ba2848",
-     "sha512": "7a624deed9cee02617239272ab6c0d2306aa2f3d916d4f6fe1ef0a4e637720af88210654121bfc2a884d319fbbb50cadc4abca9af40a883fc327c3163d11e4bc"
+     "sha256": "310a0ba9637d4ead078d0e7ab5b12dd00d800c85722f62d6eebd2ce88d73f918",
+     "sha512": "650a52e2b9c517b9aa445d3bcbe74cc5d05a56331cd525c92cb1ef475045ef32448ec164ae74ffbadf770858fa7d91a01ac3ce34b94b091eb7d660aa0d511b48"
     },
-    "length": 234428
+    "length": 407163
    },
    "composer-repo/root.json": {
     "hashes": {
-     "sha256": "c612013d035abc821ecd77a9629e5ecc5ceb79c04b9047b0644d490e6919cfdf",
-     "sha512": "35aac3e8e89d45df56bc28fcc444dcbea95781339e0cf09747fdc85f3327ffac731b0033d3bcb2447ab7083c19376d14981d1cad5fdd2d5d83cb287f59b2b7ec"
+     "sha256": "df002f6efab0ca9344536a3f823af00be50d9e83f2ee8d02444c0eab657eb5bc",
+     "sha512": "f5d99dcd95abe7bc756c2a625f439f3222e15fb9dd78aad9c3e5b5bd2a0aba8c828ed6bf3de2b1b2093b85ca2cef08a92bf8b985106a2ae09bc7c68057fe0c30"
     },
-    "length": 379
+    "length": 269
    }
   },
-  "version": 3
+  "version": 6
  }
 }
