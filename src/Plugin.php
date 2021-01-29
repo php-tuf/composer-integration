@@ -3,52 +3,49 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
-use Composer\EventDispatcher\EventDispatcher;
-use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
+use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
-use Composer\Repository\RepositoryManager;
-use Composer\Util\ProcessExecutor;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
-
 
 class Plugin implements PluginInterface
 {
+    /**
+     * {@inheritDoc}
+     */
     public function activate(Composer $composer, IOInterface $io)
     {
-        // Credit for this pattern to zaporylie/composer-drupal-optimizations.
-        // These three instantiations satisfy strict types on RepositoryFactory::manager() only.
-        // They are overwritten with the instances used by the rest of Composer inside the closure.
-        $httpDownloader = Factory::createHttpDownloader($io, $composer->getConfig());
-        $process = new ProcessExecutor($io);
-        $dispatcher = new EventDispatcher($composer, $io, $process);
+        $loop = $composer->getLoop();
+        $httpDownloader = $loop->getHttpDownloader();
+        $dispatcher = $composer->getEventDispatcher();
+        $config = $composer->getConfig();
 
-        $manager = RepositoryFactory::manager($io, $composer->getConfig(), $httpDownloader, $dispatcher, $process);
-        $setRepositories = \Closure::bind(function (RepositoryManager $manager) {
-            $manager->httpDownloader = $this->httpDownloader;
-            $manager->eventDispatcher = $this->eventDispatcher;
-            $manager->process = $this->process;
+        $old_manager = $composer->getRepositoryManager();
+        $new_manager = RepositoryFactory::manager($io, $config, $loop->getHttpDownloader(), $dispatcher, $loop->getProcessExecutor());
+        $new_manager->setLocalRepository($old_manager->getLocalRepository());
+        $new_manager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
 
-            $manager->repositoryClasses = $this->repositoryClasses;
-            $manager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
-            $manager->repositories = $this->repositories;
-            $i = 0;
-            foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
-                $manager->repositories[$i++] = $repo;
+        foreach ($old_manager->getRepositories() as $repository) {
+            if ($repository instanceof ComposerRepository) {
+                $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $config, $httpDownloader, $dispatcher);
             }
-            $manager->setLocalRepository($this->getLocalRepository());
-        }, $composer->getRepositoryManager(), RepositoryManager::class);
-        $setRepositories($manager);
-
-        $composer->setRepositoryManager($manager);
+            $new_manager->addRepository($repository);
+        }
+        $composer->setRepositoryManager($new_manager);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function uninstall(Composer $composer, IOInterface $io)
     {
         // TODO: Implement uninstall() method.
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function deactivate(Composer $composer, IOInterface $io)
     {
         // TODO: Implement deactivate() method.
