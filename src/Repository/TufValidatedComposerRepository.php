@@ -62,7 +62,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             try {
                 $this->tufRepo->refresh();
             } catch (TufException $e) {
-                throw new RepositorySecurityException('TUF secure error: ' . $e->getMessage(), $e->getCode(), $e);
+                throw new RepositorySecurityException("TUF security error: {$e->getMessage()}", $e->getCode(), $e);
             }
         }
         return parent::loadRootServerFile();
@@ -82,7 +82,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             }
 
             // @todo: Investigate whether all $sha256 hashes, when provided, are trusted. Skip TUF if so.
-            if ($sha256 != null && $sha256 != $tufTargetInfo['hashes']['sha256']) {
+            if ($sha256 !== null && $sha256 !== $tufTargetInfo['hashes']['sha256']) {
                 throw new RepositorySecurityException('TUF secure error: disagreement between TUF and Composer repositories on expected hash of ' . $tufTarget);
             }
             $sha256 = $tufTargetInfo['hashes']['sha256'];

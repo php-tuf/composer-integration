@@ -21,18 +21,26 @@ class Plugin implements PluginInterface
         $dispatcher = $composer->getEventDispatcher();
         $config = $composer->getConfig();
 
-        $old_manager = $composer->getRepositoryManager();
-        $new_manager = RepositoryFactory::manager($io, $config, $loop->getHttpDownloader(), $dispatcher, $loop->getProcessExecutor());
-        $new_manager->setLocalRepository($old_manager->getLocalRepository());
-        $new_manager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
+        // By the time this plugin is activated, several repositories may have
+        // already been instantiated, and we need to convert them to
+        // TUF-validated repositories. Unfortunately, the repository manager
+        // only allows us to add new repositories, not replace existing ones.
+        // So we have to rebuild the repository manager from the ground up to
+        // add TUF validation to the existing repositories.
+        $oldManager = $composer->getRepositoryManager();
+        $newManager = RepositoryFactory::manager($io, $config, $loop->getHttpDownloader(), $dispatcher, $loop->getProcessExecutor());
+        $newManager->setLocalRepository($oldManager->getLocalRepository());
+        // Ensure that any repositories added later will be validated by TUF if
+        // configured accordingly.
+        $newManager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
 
-        foreach ($old_manager->getRepositories() as $repository) {
+        foreach ($oldManager->getRepositories() as $repository) {
             if ($repository instanceof ComposerRepository) {
                 $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $config, $httpDownloader, $dispatcher);
             }
-            $new_manager->addRepository($repository);
+            $newManager->addRepository($repository);
         }
-        $composer->setRepositoryManager($new_manager);
+        $composer->setRepositoryManager($newManager);
     }
 
     /**
