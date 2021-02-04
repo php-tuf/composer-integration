@@ -31,6 +31,8 @@ class TufValidatedComposerRepository extends ComposerRepository
             $tufConfig = $repoConfig['tuf'];
 
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
+            // Convert the repo URL into a string that can be used as a
+            // directory name.
             $repoPath = preg_replace('{[^a-z0-9.]}i', '-', $repoConfig['url']);
             // Harvest the vendor dir from Composer. We'll store TUF state under vendor/composer/tuf.
             $vendorDir = rtrim($config->get('vendor-dir'), '/');
