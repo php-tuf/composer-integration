@@ -26,7 +26,7 @@
     "minimum-stability": "stable",
     "require": {
         "composer-plugin-api": "^2.0",
-        "php-tuf/php-tuf": "dev-composer-integration-fake"
+        "php-tuf/php-tuf": "dev-main"
     },
     "conflict": {
         "zaporylie/composer-drupal-optimizations": "*"
@@ -38,5 +38,8 @@
     },
     "extra": {
         "class": "Tuf\\ComposerIntegration\\Plugin"
+    },
+    "require-dev": {
+        "composer/composer": "^2"
     }
 }
