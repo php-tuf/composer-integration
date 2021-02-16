@@ -56,13 +56,13 @@ def generate_fixture():
     repository.timestamp.load_signing_key(timestamp_private)
 
     repository.mark_dirty(['root', 'snapshot', 'targets', 'timestamp'])
-    repository.writeall(consistent_snapshot=True)
-    repository.status()
 
+    # Add more targets here as needed.
     add_target(repository, 'packages.json')
     add_target(repository, 'p2/drupal/core.json')
 
     # Write and publish the repository.
+    repository.status()
     repository.writeall(consistent_snapshot=True)
 
     staging_dir = path.join(dir, 'metadata.staged')
