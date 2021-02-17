@@ -7,8 +7,8 @@ import shutil
 from os import path
 from unittest import mock
 
-# This file largely derives from the TUF tutorial:
-# https://github.com/theupdateframework/tuf/blob/develop/docs/TUTORIAL.md
+# This file largely derives from:
+# https://github.com/php-tuf/php-tuf/blob/main/generate_fixtures.py
 
 def import_keypair(name):
     dir = path.join(os.getcwd(), 'keys')
@@ -68,8 +68,9 @@ def generate_fixture():
     staging_dir = path.join(dir, 'metadata.staged')
     live_dir = path.join(dir, 'metadata')
     os.rename(staging_dir, live_dir)
-    return
 
-    rt.create_tuf_client_directory(dir, path.join(dir, 'tufclient'))
+    # Uncomment this line to generate the client-side metadata. This
+    # will probably not normally be needed, but it's here for reference.
+    # rt.create_tuf_client_directory(dir, path.join(dir, 'tufclient'))
 
 generate_fixture()
