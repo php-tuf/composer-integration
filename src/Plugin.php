@@ -3,52 +3,64 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
-use Composer\EventDispatcher\EventDispatcher;
-use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
+use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
-use Composer\Util\ProcessExecutor;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
-
 
 class Plugin implements PluginInterface
 {
+    /**
+     * {@inheritDoc}
+     */
     public function activate(Composer $composer, IOInterface $io)
     {
-        // Credit for this pattern to zaporylie/composer-drupal-optimizations.
-        // These three instantiations satisfy strict types on RepositoryFactory::manager() only.
-        // They are overwritten with the instances used by the rest of Composer inside the closure.
-        $httpDownloader = Factory::createHttpDownloader($io, $composer->getConfig());
-        $process = new ProcessExecutor($io);
-        $dispatcher = new EventDispatcher($composer, $io, $process);
-
-        $manager = RepositoryFactory::manager($io, $composer->getConfig(), $httpDownloader, $dispatcher, $process);
-        $setRepositories = \Closure::bind(function (RepositoryManager $manager) {
-            $manager->httpDownloader = $this->httpDownloader;
-            $manager->eventDispatcher = $this->eventDispatcher;
-            $manager->process = $this->process;
-
-            $manager->repositoryClasses = $this->repositoryClasses;
-            $manager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
-            $manager->repositories = $this->repositories;
-            $i = 0;
-            foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
-                $manager->repositories[$i++] = $repo;
-            }
-            $manager->setLocalRepository($this->getLocalRepository());
-        }, $composer->getRepositoryManager(), RepositoryManager::class);
-        $setRepositories($manager);
-
-        $composer->setRepositoryManager($manager);
+        // By the time this plugin is activated, several repositories may have
+        // already been instantiated, and we need to convert them to
+        // TUF-validated repositories. Unfortunately, the repository manager
+        // only allows us to add new repositories, not replace existing ones.
+        // So we have to rebuild the repository manager from the ground up to
+        // add TUF validation to the existing repositories.
+        $newManager = $this->createNewRepositoryManager($composer, $io);
+        $this->addTufValidationToRepositories($composer, $newManager, $io);
+        $composer->setRepositoryManager($newManager);
     }
 
+    private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
+    {
+        $loop = $composer->getLoop();
+        $newManager = RepositoryFactory::manager($io, $composer->getConfig(), $loop->getHttpDownloader(), $composer->getEventDispatcher(), $loop->getProcessExecutor());
+        $newManager->setLocalRepository($composer->getRepositoryManager()->getLocalRepository());
+        // Ensure that any Composer repositories added to this manager will be
+        // validated by TUF if configured accordingly.
+        $newManager->setRepositoryClass('composer', TufValidatedComposerRepository::class);
+
+        return $newManager;
+    }
+
+    private function addTufValidationToRepositories(Composer $composer, RepositoryManager $manager, IOInterface $io): void
+    {
+        foreach ($composer->getRepositoryManager()->getRepositories() as $repository) {
+            if ($repository instanceof ComposerRepository) {
+                $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $composer->getConfig(), $composer->getLoop()->getHttpDownloader(), $composer->getEventDispatcher());
+            }
+            $manager->addRepository($repository);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function uninstall(Composer $composer, IOInterface $io)
     {
         // TODO: Implement uninstall() method.
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function deactivate(Composer $composer, IOInterface $io)
     {
         // TODO: Implement deactivate() method.
