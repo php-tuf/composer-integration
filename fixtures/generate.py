@@ -21,16 +21,6 @@ def import_keypair(name):
 
     return (public, private)
 
-def add_target(repository, filename, signing_target=None):
-    if signing_target is None:
-        repository.targets.add_targets([filename])
-    else:
-        repository.targets(signing_target).add_target(filename)
-        repository.mark_dirty([signing_target])
-
-    repository.mark_dirty(['snapshot', 'targets', 'timestamp'])
-    print('Adding', filename)
-
 @mock.patch('time.time', mock.MagicMock(return_value=1577836800))
 def generate_fixture():
     dir = os.getcwd()
@@ -58,10 +48,11 @@ def generate_fixture():
     repository.mark_dirty(['root', 'snapshot', 'targets', 'timestamp'])
 
     # Add more targets here as needed.
-    add_target(repository, 'packages.json')
-    add_target(repository, 'p2/drupal/core.json')
+    repository.targets.add_targets(['packages.json'])
+    repository.targets.add_targets(['p2/drupal/core.json'])
 
     # Write and publish the repository.
+    repository.mark_dirty(['snapshot', 'targets', 'timestamp'])
     repository.status()
     repository.writeall(consistent_snapshot=True)
 
