@@ -41,5 +41,11 @@
     },
     "require-dev": {
         "composer/composer": "^2"
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "cp -f ./vendor/php-tuf/php-tuf/Pipfile ./fixtures",
+            "cp -f ./vendor/php-tuf/php-tuf/Pipfile.lock ./fixtures"
+        ]
     }
 }
