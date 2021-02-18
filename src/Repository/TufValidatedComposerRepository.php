@@ -9,7 +9,9 @@ use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
 use Composer\Util\Filesystem;
 use Composer\Util\HttpDownloader;
+use GuzzleHttp\Client;
 use Tuf\Client\DurableStorage\FileStorage;
+use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\Updater;
 use Tuf\Exception\TufException;
 
@@ -42,7 +44,10 @@ class TufValidatedComposerRepository extends ComposerRepository
             $fs->ensureDirectoryExists($repoPath);
             $tufDurableStorage = new FileStorage($repoPath);
             // Instantiate TUF library.
-            $this->tufRepo = new Updater($repoConfig['url'], [
+            $client = new Client([
+              'base_uri' => $tufConfig['url'],
+            ]);
+            $this->tufRepo = new Updater(new GuzzleFileFetcher($client), [
               ['url_prefix' => $tufConfig['url']]
             ], $tufDurableStorage);
         } else {
