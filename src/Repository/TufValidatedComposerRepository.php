@@ -9,11 +9,10 @@ use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
 use Composer\Util\Filesystem;
 use Composer\Util\HttpDownloader;
-use GuzzleHttp\Client;
 use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\Updater;
-use Tuf\Exception\TufException;
+use Tuf\ComposerIntegration\HttpDownloaderAdapter;
 
 class TufValidatedComposerRepository extends ComposerRepository
 {
@@ -27,8 +26,6 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
-        parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
-
         if (!empty($repoConfig['tuf'])) {
             $tufConfig = $repoConfig['tuf'];
 
@@ -42,58 +39,23 @@ class TufValidatedComposerRepository extends ComposerRepository
             // Ensure directory exists.
             $fs = new Filesystem();
             $fs->ensureDirectoryExists($repoPath);
-            $tufDurableStorage = new FileStorage($repoPath);
+
+            $rootFile = $repoPath . '/root.json';
+            if (!file_exists($rootFile)) {
+                $fs->copy(realpath($tufConfig['root']), $rootFile);
+            }
+
             // Instantiate TUF library.
-            $client = new Client([
-              'base_uri' => $tufConfig['url'],
-            ]);
-            $this->tufRepo = new Updater(new GuzzleFileFetcher($client), [
-              ['url_prefix' => $tufConfig['url']]
-            ], $tufDurableStorage);
+            $fetcher = GuzzleFileFetcher::createFromUri($repoConfig['url']);
+            $this->tufRepo = new Updater($fetcher, [], new FileStorage($repoPath));
+
+            $httpDownloader = new HttpDownloaderAdapter($httpDownloader, $this->tufRepo);
         } else {
             // Outputting composer repositories not secured by TUF may create confusion about other
             // not-secured repository types (eg, "vcs").
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from ${repoConfig['url']} are not verified by TUF.");
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function loadRootServerFile()
-    {
-        // If we are using TUF, fetch the latest secure metadata for the
-        // Composer package metadata.
-        if ($this->tufRepo) {
-            try {
-                $this->tufRepo->refresh();
-            } catch (TufException $e) {
-                throw new RepositorySecurityException("TUF security error: {$e->getMessage()}", $e->getCode(), $e);
-            }
-        }
-        return parent::loadRootServerFile();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function fetchFile($filename, $cacheKey = null, $sha256 = null, $storeLastModifiedTime = false)
-    {
-        if ($this->tufRepo) {
-            $tufTarget = ltrim(parse_url($filename, PHP_URL_PATH), '/');
-            try {
-                $tufTargetInfo = $this->tufRepo->getOneValidTargetInfo($tufTarget);
-            } catch (TufException $e) {
-                throw new RepositorySecurityException('TUF secure error: ' . $e->getMessage(), $e->getCode(), $e);
-            }
-
-            // @todo: Investigate whether all $sha256 hashes, when provided, are trusted. Skip TUF if so.
-            if ($sha256 !== null && $sha256 !== $tufTargetInfo['hashes']['sha256']) {
-                throw new RepositorySecurityException('TUF secure error: disagreement between TUF and Composer repositories on expected hash of ' . $tufTarget);
-            }
-            $sha256 = $tufTargetInfo['hashes']['sha256'];
-        }
-        return parent::fetchFile($filename, $cacheKey, $sha256, $storeLastModifiedTime);
+        parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
     }
 }
