@@ -47,9 +47,9 @@ class TufValidatedComposerRepository extends ComposerRepository
 
             // Instantiate TUF library.
             $fetcher = GuzzleFileFetcher::createFromUri($repoConfig['url']);
-            $this->tufRepo = new Updater($fetcher, [], new FileStorage($repoPath));
+            $repoConfig['options']['tuf'] = new Updater($fetcher, [], new FileStorage($repoPath));
 
-            $httpDownloader = new HttpDownloaderAdapter($httpDownloader, $this->tufRepo);
+            $httpDownloader = new HttpDownloaderAdapter($httpDownloader);
         } else {
             // Outputting composer repositories not secured by TUF may create confusion about other
             // not-secured repository types (eg, "vcs").

@@ -12,7 +12,6 @@ use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\ResponseStream;
-use Tuf\Client\Updater;
 use Tuf\Exception\RepoFileNotFound;
 
 /**
@@ -25,8 +24,6 @@ use Tuf\Exception\RepoFileNotFound;
 class HttpDownloaderAdapter extends HttpDownloader
 {
     private $decorated;
-
-    private $tufRepo;
 
     /**
      * A queue of promises to settle asynchronously.
@@ -48,10 +45,9 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     private $activeJobs = 0;
 
-    public function __construct(HttpDownloader $decorated, Updater $tufRepo)
+    public function __construct(HttpDownloader $decorated)
     {
         $this->decorated = $decorated;
-        $this->tufRepo = $tufRepo;
         $this->queue = new \ArrayIterator();
         $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
     }
@@ -68,7 +64,6 @@ class HttpDownloaderAdapter extends HttpDownloader
     private function createPromise(array $request): PromiseInterface
     {
         $request += [
-            'options' => [],
             'copyTo' => false,
         ];
         $request['options'] = array_replace_recursive($this->getOptions(), $request['options']);
@@ -116,7 +111,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         $target = ltrim($target, '/');
 
         $this->activeJobs++;
-        return $this->tufRepo->download($target, $fetcherOptions)->then($accept, $reject);
+        return $request['options']['tuf']->download($target, $fetcherOptions)->then($accept, $reject);
     }
 
     /**
@@ -124,7 +119,11 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function get($url, $options = array())
     {
-        return $this->add($url, $options)->wait();
+        if (isset($options['tuf'])) {
+            return $this->add($url, $options)->wait();
+        } else {
+            return $this->decorated->get($url, $options);
+        }
     }
 
     /**
@@ -132,10 +131,14 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function add($url, $options = array())
     {
-        return $this->createQueuedPromise([
-            'url' => $url,
-            'options' => $options,
-        ]);
+        if (isset($options['tuf'])) {
+            return $this->createQueuedPromise([
+              'url' => $url,
+              'options' => $options,
+            ]);
+        } else {
+            return $this->decorated->add($url, $options);
+        }
     }
 
     /**
@@ -143,7 +146,11 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function copy($url, $to, $options = array())
     {
-        return $this->addCopy($url, $to, $options)->wait();
+        if (isset($options['tuf'])) {
+            return $this->addCopy($url, $to, $options)->wait();
+        } else {
+            return $this->decorated->copy($url, $to, $options);
+        }
     }
 
     /**
@@ -151,11 +158,15 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function addCopy($url, $to, $options = array())
     {
-        return $this->createQueuedPromise([
-            'url' => $url,
-            'options' => $options,
-            'copyTo' => $to,
-        ]);
+        if (isset($options['tuf'])) {
+            return $this->createQueuedPromise([
+              'url' => $url,
+              'options' => $options,
+              'copyTo' => $to,
+            ]);
+        } else {
+            return $this->decorated->addCopy($url, $to, $options);
+        }
     }
 
     private function createQueuedPromise(array $request): PromiseInterface
