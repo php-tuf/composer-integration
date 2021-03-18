@@ -261,6 +261,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function countActiveJobs($index = null)
     {
         $this->clearSettledPromises();
+        $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
         $this->aggregator->promise()->wait();
         return $this->activeJobs + $this->decorated->countActiveJobs($index);
     }

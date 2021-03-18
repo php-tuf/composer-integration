@@ -3,11 +3,14 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
+use Composer\Factory;
+use Composer\Installer\LibraryInstaller;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
+use Composer\Util\Loop;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 
 class Plugin implements PluginInterface
@@ -17,6 +20,7 @@ class Plugin implements PluginInterface
      */
     public function activate(Composer $composer, IOInterface $io)
     {
+        $composer->getLoop()->getHttpDownloader()->wait();
         $this->httpDownloader = new HttpDownloaderAdapter(
           $composer->getLoop()->getHttpDownloader(),
           $composer->getConfig()->get('vendor-dir')
@@ -31,6 +35,22 @@ class Plugin implements PluginInterface
         $newManager = $this->createNewRepositoryManager($composer, $io);
         $this->addTufValidationToRepositories($composer, $newManager, $io);
         $composer->setRepositoryManager($newManager);
+
+        $downloadManager = Factory::createDownloadManager(
+          $io,
+          $composer->getConfig(),
+          $this->httpDownloader,
+          $composer->getLoop()->getProcessExecutor(),
+          $composer->getEventDispatcher()
+        );
+        $composer->setDownloadManager($downloadManager);
+
+        $loop = new Loop($this->httpDownloader, $composer->getLoop()->getProcessExecutor());
+        $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
+        $composer->setInstallationManager($installationManager);
+
+        $installer = new LibraryInstaller($io, $composer);
+        $installationManager->addInstaller($installer);
     }
 
     private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
