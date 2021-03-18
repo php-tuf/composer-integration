@@ -49,8 +49,11 @@ class Plugin implements PluginInterface
         $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
         $composer->setInstallationManager($installationManager);
 
-        $installer = new LibraryInstaller($io, $composer);
-        $installationManager->addInstaller($installer);
+        $factory = new Factory();
+        $reflector = new \ReflectionObject($factory);
+        $method = $reflector->getMethod('createDefaultInstallers');
+        $method->setAccessible(true);
+        $method->invoke($factory, $installationManager, $composer, $io, $composer->getLoop()->getProcessExecutor());
     }
 
     private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
