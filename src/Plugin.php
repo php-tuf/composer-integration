@@ -17,6 +17,11 @@ class Plugin implements PluginInterface
      */
     public function activate(Composer $composer, IOInterface $io)
     {
+        $this->httpDownloader = new HttpDownloaderAdapter(
+          $composer->getLoop()->getHttpDownloader(),
+          $composer->getConfig()->get('vendor-dir')
+        );
+
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
         // TUF-validated repositories. Unfortunately, the repository manager
@@ -44,7 +49,7 @@ class Plugin implements PluginInterface
     {
         foreach ($composer->getRepositoryManager()->getRepositories() as $repository) {
             if ($repository instanceof ComposerRepository) {
-                $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $composer->getConfig(), $composer->getLoop()->getHttpDownloader(), $composer->getEventDispatcher());
+                $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $composer->getConfig(), $this->httpDownloader, $composer->getEventDispatcher());
             }
             $manager->addRepository($repository);
         }

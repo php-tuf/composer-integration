@@ -3,7 +3,9 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Downloader\TransportException;
+use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
+use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\EachPromise;
@@ -11,7 +13,10 @@ use GuzzleHttp\Promise\Is;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\StreamInterface;
+use Tuf\Client\DurableStorage\FileStorage;
+use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\ResponseStream;
+use Tuf\Client\Updater;
 use Tuf\Exception\RepoFileNotFound;
 
 /**
@@ -24,6 +29,10 @@ use Tuf\Exception\RepoFileNotFound;
 class HttpDownloaderAdapter extends HttpDownloader
 {
     private $decorated;
+
+    private $instances = [];
+
+    private $vendorDir;
 
     /**
      * A queue of promises to settle asynchronously.
@@ -45,11 +54,38 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     private $activeJobs = 0;
 
-    public function __construct(HttpDownloader $decorated)
+    public function __construct(HttpDownloader $decorated, string $vendorDir)
     {
         $this->decorated = $decorated;
+        $this->vendorDir = $vendorDir;
         $this->queue = new \ArrayIterator();
         $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
+    }
+
+    public function register(ComposerRepository $repository)
+    {
+        $repoConfig = $repository->getRepoConfig();
+        $url = $repoConfig['url'];
+
+        // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
+        // Convert the repo URL into a string that can be used as a
+        // directory name.
+        $repoPath = preg_replace('/[^[:alnum:]\.]/', '-', $url);
+        // Harvest the vendor dir from Composer. We'll store TUF state under vendor/composer/tuf.
+        $vendorDir = rtrim($this->vendorDir, '/');
+        $repoPath = "$vendorDir/composer/tuf/repo/$repoPath";
+        // Ensure directory exists.
+        $fs = new Filesystem();
+        $fs->ensureDirectoryExists($repoPath);
+
+        $rootFile = $repoPath . '/root.json';
+        if (!file_exists($rootFile)) {
+            $fs->copy(realpath($repoConfig['tuf']['root']), $rootFile);
+        }
+
+        // Instantiate TUF library.
+        $fetcher = GuzzleFileFetcher::createFromUri($url);
+        $this->instances[$url] = new Updater($fetcher, [], new FileStorage($repoPath));
     }
 
     /**
@@ -111,7 +147,8 @@ class HttpDownloaderAdapter extends HttpDownloader
         $target = ltrim($target, '/');
 
         $this->activeJobs++;
-        return $request['options']['tuf']->download($target, $fetcherOptions)->then($accept, $reject);
+        $tuf = $this->instances[$request['options']['tuf']['repository']];
+        return $tuf->download($target, $fetcherOptions)->then($accept, $reject);
     }
 
     /**
