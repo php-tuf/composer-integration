@@ -143,8 +143,12 @@ class HttpDownloaderAdapter extends HttpDownloader
             throw $e;
         };
 
-        $target = parse_url($request['url'], PHP_URL_PATH);
-        $target = ltrim($target, '/');
+        if (isset($request['options']['tuf']['target'])) {
+            $target = $request['options']['tuf']['target'];
+        } else {
+            $target = parse_url($request['url'], PHP_URL_PATH);
+            $target = ltrim($target, '/');
+        }
 
         $this->activeJobs++;
         $tuf = $this->instances[$request['options']['tuf']['repository']];
