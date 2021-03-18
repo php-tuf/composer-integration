@@ -25,6 +25,8 @@ class Plugin implements PluginInterface
           $composer->getLoop()->getHttpDownloader(),
           $composer->getConfig()->get('vendor-dir')
         );
+        $loop = new Loop($this->httpDownloader, $composer->getLoop()->getProcessExecutor());
+        $composer->setLoop($loop);
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
@@ -45,7 +47,6 @@ class Plugin implements PluginInterface
         );
         $composer->setDownloadManager($downloadManager);
 
-        $loop = new Loop($this->httpDownloader, $composer->getLoop()->getProcessExecutor());
         $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
         $composer->setInstallationManager($installationManager);
 
