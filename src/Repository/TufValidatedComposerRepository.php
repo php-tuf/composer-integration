@@ -9,6 +9,9 @@ use Composer\Repository\ComposerRepository;
 use Tuf\ComposerIntegration\HttpDownloaderAdapter;
 use Tuf\ComposerIntegration\PackageLoader;
 
+/**
+ * Defines a Composer repository that is protected by TUF.
+ */
 class TufValidatedComposerRepository extends ComposerRepository
 {
     /**
@@ -16,19 +19,13 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloaderAdapter $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
-        if (!empty($repoConfig['tuf'])) {
-            $repoConfig['options']['tuf'] = [$repoConfig['url']];
-        }
+        $repoConfig['options']['tuf'] = [
+          $repoConfig['url'],
+        ];
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
-        if (!empty($repoConfig['tuf'])) {
-            $httpDownloader->register($this);
-            $this->loader = new PackageLoader($this, $httpDownloader, $this->versionParser);
-        } else {
-            // Outputting composer repositories not secured by TUF may create confusion about other
-            // not-secured repository types (eg, "vcs").
-            // @todo Usability assessment. Should we output this for other repo types, or not at all?
-            $io->warning("Authenticity of packages from ${repoConfig['url']} are not verified by TUF.");
-        }
-
+        // The HTTP downloader manages connections to multiple TUF repositories,
+        // so it needs to be made aware of this specific one.
+        $httpDownloader->register($this);
+        $this->loader = new PackageLoader($this, $httpDownloader, $this->versionParser);
     }
 }

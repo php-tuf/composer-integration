@@ -22,13 +22,10 @@ class Plugin implements PluginInterface
      */
     public function activate(Composer $composer, IOInterface $io)
     {
-        $composer->getLoop()->getHttpDownloader()->wait();
-        $this->httpDownloader = new HttpDownloaderAdapter(
-          $composer->getLoop()->getHttpDownloader(),
-          static::getStoragePath($composer)
-        );
-
-        $this->setHttpDownloader($composer, $io, $this->httpDownloader);
+        $downloader = $composer->getLoop()->getHttpDownloader();
+        $downloader->wait();
+        $downloader = new HttpDownloaderAdapter($downloader, static::getStoragePath($composer));
+        $this->setHttpDownloader($composer, $io, $downloader);
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
@@ -57,7 +54,14 @@ class Plugin implements PluginInterface
     {
         foreach ($composer->getRepositoryManager()->getRepositories() as $repository) {
             if ($repository instanceof ComposerRepository) {
-                $repository = new TufValidatedComposerRepository($repository->getRepoConfig(), $io, $composer->getConfig(), $this->httpDownloader, $composer->getEventDispatcher());
+                $config = $repository->getRepoConfig();
+
+                if (isset($config['tuf'])) {
+                    $repository = new TufValidatedComposerRepository($config, $io, $composer->getConfig(), $composer->getLoop()->getHttpDownloader(), $composer->getEventDispatcher());
+                } else {
+                    // @todo Usability assessment. Should we output this for other repo types, or not at all?
+                    $io->warning("Authenticity of packages from ${config['url']} are not verified by TUF.");
+                }
             }
             $manager->addRepository($repository);
         }
