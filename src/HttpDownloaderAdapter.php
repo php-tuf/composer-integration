@@ -28,7 +28,7 @@ use Tuf\Exception\RepoFileNotFound;
  */
 class HttpDownloaderAdapter extends HttpDownloader
 {
-    private $decorated;
+    public $decorated;
 
     private $instances = [];
 

@@ -11,6 +11,7 @@ use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\Filesystem;
+use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 
@@ -26,8 +27,8 @@ class Plugin implements PluginInterface
           $composer->getLoop()->getHttpDownloader(),
           static::getStoragePath($composer)
         );
-        $loop = new Loop($this->httpDownloader, $composer->getLoop()->getProcessExecutor());
-        $composer->setLoop($loop);
+
+        $this->setHttpDownloader($composer, $io, $this->httpDownloader);
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
@@ -38,24 +39,6 @@ class Plugin implements PluginInterface
         $newManager = $this->createNewRepositoryManager($composer, $io);
         $this->addTufValidationToRepositories($composer, $newManager, $io);
         $composer->setRepositoryManager($newManager);
-
-        $downloadManager = Factory::createDownloadManager(
-          $io,
-          $composer->getConfig(),
-          $this->httpDownloader,
-          $composer->getLoop()->getProcessExecutor(),
-          $composer->getEventDispatcher()
-        );
-        $composer->setDownloadManager($downloadManager);
-
-        $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
-        $composer->setInstallationManager($installationManager);
-
-        $factory = new Factory();
-        $reflector = new \ReflectionObject($factory);
-        $method = $reflector->getMethod('createDefaultInstallers');
-        $method->setAccessible(true);
-        $method->invoke($factory, $installationManager, $composer, $io, $composer->getLoop()->getProcessExecutor());
     }
 
     private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
@@ -97,6 +80,48 @@ class Plugin implements PluginInterface
      */
     public function deactivate(Composer $composer, IOInterface $io)
     {
+        $downloader = $composer->getLoop()->getHttpDownloader();
+
+        if ($downloader instanceof HttpDownloaderAdapter) {
+            $this->setHttpDownloader($composer, $io, $downloader->decorated);
+        }
+    }
+
+    /**
+     * Swaps out the HTTP downloader.
+     *
+     * The HTTP downloader is a low-level service used by a lot of things.
+     * Therefore, we need to reinitialize the main event loop, the download
+     * manager, and the installation manager for the change to take full effect.
+     *
+     * @param \Composer\Composer $composer
+     *   The Composer instance.
+     * @param \Composer\IO\IOInterface $io
+     *   The I/O object.
+     * @param \Composer\Util\HttpDownloader $newDownloader
+     *   The new HTTP downloader to swap in.
+     */
+    private function setHttpDownloader(Composer $composer, IOInterface $io, HttpDownloader $newDownloader): void
+    {
+        $loop = new Loop($newDownloader, $composer->getLoop()->getProcessExecutor());
+        $composer->setLoop($loop);
+
+        $downloadManager = Factory::createDownloadManager($io, $composer->getConfig(), $newDownloader, $loop->getProcessExecutor(), $composer->getEventDispatcher());
+        $composer->setDownloadManager($downloadManager);
+
+        $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
+        $composer->setInstallationManager($installationManager);
+
+        // It sucks to call a protected method, but if we don't do this, package
+        // installations and updates will fail hard. Hopefully we can fix this
+        // later if Composer makes Factory::createDefaultInstallers() public.
+        // @todo Support composer/installers and
+        // oomphinc/composer-installers-extender as well.
+        $factory = new Factory();
+        $reflector = new \ReflectionObject($factory);
+        $method = $reflector->getMethod('createDefaultInstallers');
+        $method->setAccessible(true);
+        $method->invoke($factory, $installationManager, $composer, $io, $loop->getProcessExecutor());
     }
 
     /**
