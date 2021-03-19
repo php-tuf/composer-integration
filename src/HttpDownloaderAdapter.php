@@ -24,15 +24,30 @@ use Tuf\Exception\RepoFileNotFound;
  * Provides a TUF-aware adapter for Composer's HTTP downloader.
  *
  * This class extends \Composer\Util\HttpDownloader in order to satisfy type
- * hints, but decorates an existing instance in order to preserve the state of
- * the HTTP downloader used by Composer's loop.
+ * hints, but decorates an existing instance in order to preserve as much state
+ * as possible.
  */
 class HttpDownloaderAdapter extends HttpDownloader
 {
+    /**
+     * The decorated HTTP downloader.
+     *
+     * @var \Composer\Util\HttpDownloader
+     */
     public $decorated;
 
+    /**
+     * The instantiated TUF repositories, keyed by URL.
+     *
+     * @var Updater[]
+     */
     private $instances = [];
 
+    /**
+     * The instantiated TUF file fetchers, keyed by repository URL.
+     *
+     * @var \Tuf\Client\RepoFileFetcherInterface[]
+     */
     public $fetchers = [];
 
     /**
@@ -54,22 +69,25 @@ class HttpDownloaderAdapter extends HttpDownloader
     private $queue;
 
     /**
-     * An aggregated promise to settle the queued promises asynchronously.
+     * The number of pending promises.
      *
-     * @var \GuzzleHttp\Promise\EachPromise
-     *
-     * @see ::countActiveJobs()
+     * @var int
      */
-    private $aggregator;
-
     private $activeJobs = 0;
 
+    /**
+     * HttpDownloaderAdapter constructor.
+     *
+     * @param \Composer\Util\HttpDownloader $decorated
+     *   The decorated HTTP downloader.
+     * @param string $storagePath
+     *   The path where TUF data should be persisted.
+     */
     public function __construct(HttpDownloader $decorated, string $storagePath)
     {
         $this->decorated = $decorated;
         $this->storagePath = $storagePath;
         $this->queue = new \ArrayIterator();
-        $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
     }
 
     public function register(ComposerRepository $repository)
@@ -77,13 +95,13 @@ class HttpDownloaderAdapter extends HttpDownloader
         $url = static::getUrl($repository);
 
         // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-        // Convert the repo URL into a string that can be used as a
-        // directory name.
+        // Use the repository URL to derive a path where we can persist the TUF
+        // data.
         $repoPath = implode(DIRECTORY_SEPARATOR, [
           $this->storagePath,
           preg_replace('/[^[:alnum:]\.]/', '-', $url),
         ]);
-        // Ensure directory exists.
+
         $fs = new Filesystem();
         $fs->ensureDirectoryExists($repoPath);
 
@@ -93,9 +111,7 @@ class HttpDownloaderAdapter extends HttpDownloader
             $fs->copy(realpath($repoConfig['tuf']['root']), $rootFile);
         }
 
-        // Instantiate TUF library.
-        $fetcher = GuzzleFileFetcher::createFromUri($url);
-        $this->fetchers[$url] = new UrlMapDecorator($fetcher);
+        $this->fetchers[$url] = new UrlMapDecorator(GuzzleFileFetcher::createFromUri($url));
         $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
     }
 
@@ -317,8 +333,8 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function countActiveJobs($index = null)
     {
         $this->clearSettledPromises();
-        $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
-        $this->aggregator->promise()->wait();
+        $aggregate = new EachPromise($this->queue, ['concurrency' => 12]);
+        $aggregate->promise()->wait();
         return $this->activeJobs + $this->decorated->countActiveJobs($index);
     }
 
