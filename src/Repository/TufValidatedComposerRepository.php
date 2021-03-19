@@ -19,13 +19,22 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloaderAdapter $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
+        // Ensure that all HTTP requests made by the parent class will identify
+        // which TUF repository they're associated with. The TUF-aware HTTP
+        // downloader keeps track of all instantiated TUF repositories and
+        // identifies them by their URL. We need to do this before calling the
+        // parent constructor because the options are stored in a private
+        // property.
+        // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::register()
+        // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::createPromise()
         $repoConfig['options']['tuf'] = [
           $repoConfig['url'],
         ];
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
-        // The HTTP downloader manages connections to multiple TUF repositories,
-        // so it needs to be made aware of this specific one.
+        // Make the HTTP downloader aware of this repository.
         $httpDownloader->register($this);
+        // The parent constructor sets up a package loader, so we need to
+        // override that with our TUF-aware one.
         $this->loader = new PackageLoader($this, $httpDownloader, $this->versionParser);
     }
 }
