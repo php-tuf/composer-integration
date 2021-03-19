@@ -3,6 +3,7 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Downloader\TransportException;
+use Composer\Package\BasePackage;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
 use Composer\Util\Filesystem;
@@ -73,8 +74,7 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     public function register(ComposerRepository $repository)
     {
-        $repoConfig = $repository->getRepoConfig();
-        $url = $repoConfig['url'];
+        $url = static::getUrl($repository);
 
         // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
         // Convert the repo URL into a string that can be used as a
@@ -89,6 +89,7 @@ class HttpDownloaderAdapter extends HttpDownloader
 
         $rootFile = $repoPath . '/root.json';
         if (!file_exists($rootFile)) {
+            $repoConfig = $repository->getRepoConfig();
             $fs->copy(realpath($repoConfig['tuf']['root']), $rootFile);
         }
 
@@ -96,6 +97,46 @@ class HttpDownloaderAdapter extends HttpDownloader
         $fetcher = GuzzleFileFetcher::createFromUri($url);
         $this->fetchers[$url] = new UrlMapDecorator($fetcher);
         $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
+    }
+
+    /**
+     * Registers a package as a target of an instantiated TUF repository.
+     *
+     * This modifies the package's transport options, adding the URL of the TUF
+     * repository it came from, and the SHA-256 hash of the package's dist URL,
+     * which is assumed to be the name of the TUF target for the package.
+     *
+     * @param \Composer\Package\BasePackage $package
+     *   The package object.
+     * @param \Composer\Repository\ComposerRepository $repository
+     *   The repository which contains the package.
+     */
+    public function registerPackage(BasePackage $package, ComposerRepository $repository): void
+    {
+        $url = $package->getDistUrl();
+        $target = hash('sha256', $url);
+        $repository = static::getUrl($repository);
+
+        $options = $package->getTransportOptions();
+        $options['tuf'] = [$repository, $target];
+        $package->setTransportOptions($options);
+
+        $this->fetchers[$repository]->urlMap[$target] = $url;
+    }
+
+    /**
+     * Returns the URL of a Composer repository.
+     *
+     * @param \Composer\Repository\ComposerRepository $repository
+     *   The Composer repository.
+     *
+     * @return string
+     *   The repository's URL.
+     */
+    private static function getUrl(ComposerRepository $repository): string
+    {
+        $config = $repository->getRepoConfig();
+        return $config['url'];
     }
 
     /**
@@ -153,9 +194,9 @@ class HttpDownloaderAdapter extends HttpDownloader
             throw $e;
         };
 
-        $repository = $request['options']['tuf']['repository'];
-        if (isset($request['options']['tuf']['target'])) {
-            $target = $request['options']['tuf']['target'];
+        list ($repository) = $request['options']['tuf'];
+        if (isset($request['options']['tuf'][1])) {
+            $target = $request['options']['tuf'][1];
         } else {
             $target = parse_url($request['url'], PHP_URL_PATH);
             $target = ltrim($target, '/');

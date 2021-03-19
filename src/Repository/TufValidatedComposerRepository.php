@@ -17,7 +17,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloaderAdapter $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
         if (!empty($repoConfig['tuf'])) {
-            $repoConfig['options']['tuf']['repository'] = $repoConfig['url'];
+            $repoConfig['options']['tuf'] = [$repoConfig['url']];
         }
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
         if (!empty($repoConfig['tuf'])) {
