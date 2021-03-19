@@ -110,10 +110,12 @@ class Plugin implements PluginInterface
         $loop = new Loop($newDownloader, $composer->getLoop()->getProcessExecutor());
         $composer->setLoop($loop);
 
-        $downloadManager = Factory::createDownloadManager($io, $composer->getConfig(), $newDownloader, $loop->getProcessExecutor(), $composer->getEventDispatcher());
+        $factory = new Factory();
+
+        $downloadManager = $factory->createDownloadManager($io, $composer->getConfig(), $newDownloader, $loop->getProcessExecutor(), $composer->getEventDispatcher());
         $composer->setDownloadManager($downloadManager);
 
-        $installationManager = Factory::createInstallationManager($loop, $io, $composer->getEventDispatcher());
+        $installationManager = $factory->createInstallationManager($loop, $io, $composer->getEventDispatcher());
         $composer->setInstallationManager($installationManager);
 
         // It sucks to call a protected method, but if we don't do this, package
@@ -121,7 +123,6 @@ class Plugin implements PluginInterface
         // later if Composer makes Factory::createDefaultInstallers() public.
         // @todo Support composer/installers and
         // oomphinc/composer-installers-extender as well.
-        $factory = new Factory();
         $reflector = new \ReflectionObject($factory);
         $method = $reflector->getMethod('createDefaultInstallers');
         $method->setAccessible(true);
