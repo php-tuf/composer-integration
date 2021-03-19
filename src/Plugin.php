@@ -10,6 +10,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
+use Composer\Util\Filesystem;
 use Composer\Util\Loop;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 
@@ -23,7 +24,7 @@ class Plugin implements PluginInterface
         $composer->getLoop()->getHttpDownloader()->wait();
         $this->httpDownloader = new HttpDownloaderAdapter(
           $composer->getLoop()->getHttpDownloader(),
-          $composer->getConfig()->get('vendor-dir')
+          static::getStoragePath($composer)
         );
         $loop = new Loop($this->httpDownloader, $composer->getLoop()->getProcessExecutor());
         $composer->setLoop($loop);
@@ -84,7 +85,11 @@ class Plugin implements PluginInterface
      */
     public function uninstall(Composer $composer, IOInterface $io)
     {
-        // TODO: Implement uninstall() method.
+        $path = static::getStoragePath($composer);
+        $io->info("Deleting TUF data in $path");
+
+        $fs = new Filesystem();
+        $fs->removeDirectoryPhp($path);
     }
 
     /**
@@ -92,6 +97,21 @@ class Plugin implements PluginInterface
      */
     public function deactivate(Composer $composer, IOInterface $io)
     {
-        // TODO: Implement deactivate() method.
+    }
+
+    /**
+     * Gets the path where persistent TUF data should be stored.
+     *
+     * @param \Composer\Composer $composer
+     *   The Composer instance.
+     *
+     * @return string
+     *   The path where persistent TUF data should be stored.
+     */
+    private static function getStoragePath(Composer $composer): string
+    {
+        $vendorDir = $composer->getConfig()->get('vendor-dir');
+        $vendorDir = rtrim($vendorDir, DIRECTORY_SEPARATOR);
+        return implode(DIRECTORY_SEPARATOR, [$vendorDir, 'composer', 'tuf']);
     }
 }

@@ -34,7 +34,14 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     public $fetchers = [];
 
-    private $vendorDir;
+    /**
+     * The base path where persistent TUF data should be stored.
+     *
+     * @var string
+     *
+     * @see \Tuf\ComposerIntegration\Plugin::getStoragePath()
+     */
+    private $storagePath;
 
     /**
      * A queue of promises to settle asynchronously.
@@ -56,10 +63,10 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     private $activeJobs = 0;
 
-    public function __construct(HttpDownloader $decorated, string $vendorDir)
+    public function __construct(HttpDownloader $decorated, string $storagePath)
     {
         $this->decorated = $decorated;
-        $this->vendorDir = $vendorDir;
+        $this->storagePath = $storagePath;
         $this->queue = new \ArrayIterator();
         $this->aggregator = new EachPromise($this->queue, ['concurrency' => 12]);
     }
@@ -72,10 +79,10 @@ class HttpDownloaderAdapter extends HttpDownloader
         // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
         // Convert the repo URL into a string that can be used as a
         // directory name.
-        $repoPath = preg_replace('/[^[:alnum:]\.]/', '-', $url);
-        // Harvest the vendor dir from Composer. We'll store TUF state under vendor/composer/tuf.
-        $vendorDir = rtrim($this->vendorDir, '/');
-        $repoPath = "$vendorDir/composer/tuf/repo/$repoPath";
+        $repoPath = implode(DIRECTORY_SEPARATOR, [
+          $this->storagePath,
+          preg_replace('/[^[:alnum:]\.]/', '-', $url),
+        ]);
         // Ensure directory exists.
         $fs = new Filesystem();
         $fs->ensureDirectoryExists($repoPath);
