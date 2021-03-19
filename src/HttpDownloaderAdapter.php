@@ -32,6 +32,8 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     private $instances = [];
 
+    public $fetchers = [];
+
     private $vendorDir;
 
     /**
@@ -84,8 +86,8 @@ class HttpDownloaderAdapter extends HttpDownloader
         }
 
         // Instantiate TUF library.
-        $fetcher = GuzzleFileFetcher::createFromUri($url);
-        $this->instances[$url] = new Updater($fetcher, [], new FileStorage($repoPath));
+        $this->fetchers[$url] = FileFetcher::createFromUri($url);
+        $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
     }
 
     /**
@@ -143,6 +145,7 @@ class HttpDownloaderAdapter extends HttpDownloader
             throw $e;
         };
 
+        $repository = $request['options']['tuf']['repository'];
         if (isset($request['options']['tuf']['target'])) {
             $target = $request['options']['tuf']['target'];
         } else {
@@ -151,7 +154,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         }
 
         $this->activeJobs++;
-        $tuf = $this->instances[$request['options']['tuf']['repository']];
+        $tuf = $this->instances[$repository];
         return $tuf->download($target, $fetcherOptions)->then($accept, $reject);
     }
 

@@ -22,7 +22,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
         if (!empty($repoConfig['tuf'])) {
             $httpDownloader->register($this);
-            $this->loader = new PackageLoader($this, $this->versionParser);
+            $this->loader = new PackageLoader($this, $httpDownloader, $this->versionParser);
         } else {
             // Outputting composer repositories not secured by TUF may create confusion about other
             // not-secured repository types (eg, "vcs").

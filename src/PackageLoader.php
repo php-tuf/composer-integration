@@ -9,13 +9,16 @@ use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 class PackageLoader extends ArrayLoader
 {
     private $repository;
+    private $downloader;
     public function __construct(
       TufValidatedComposerRepository $repository,
+      HttpDownloaderAdapter $downloader,
       VersionParser $parser = null,
       $loadOptions = false
     ) {
         parent::__construct($parser, $loadOptions);
         $this->repository = $repository;
+        $this->downloader = $downloader;
     }
 
     public function loadPackages(array $versions, $class)
@@ -30,6 +33,8 @@ class PackageLoader extends ArrayLoader
               'repository' => $this->repository->getRepoConfig()['url'],
             ];
             $package->setTransportOptions($options);
+
+            $this->downloader->fetchers[$options['tuf']['repository']]->urlMap[$options['tuf']['target']] = $package->getDistUrl();
         }
         return $packages;
     }
