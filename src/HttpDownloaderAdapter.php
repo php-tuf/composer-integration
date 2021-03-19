@@ -121,7 +121,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         $options['tuf'] = [$repository, $target];
         $package->setTransportOptions($options);
 
-        $this->fetchers[$repository]->urlMap[$target] = $url;
+        $this->fetchers[$repository][$target] = $url;
     }
 
     /**

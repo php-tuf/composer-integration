@@ -8,7 +8,7 @@ use Tuf\Client\RepoFileFetcherInterface;
 /**
  * Decorates a file fetcher to map targets to remote URLs.
  */
-class UrlMapDecorator implements RepoFileFetcherInterface
+class UrlMapDecorator extends \ArrayObject implements RepoFileFetcherInterface
 {
     /**
      * The decorated file fetcher.
@@ -16,8 +16,6 @@ class UrlMapDecorator implements RepoFileFetcherInterface
      * @var \Tuf\Client\RepoFileFetcherInterface
      */
     private $decorated;
-
-    public $urlMap = [];
 
     /**
      * UrlMapDecorator constructor.
@@ -51,6 +49,6 @@ class UrlMapDecorator implements RepoFileFetcherInterface
      */
     public function fetchTarget(string $fileName, int $maxBytes, ...$extra): PromiseInterface
     {
-        return $this->decorated->fetchTarget($this->urlMap[$fileName] ?? $fileName, $maxBytes, ...$extra);
+        return $this->decorated->fetchTarget($this[$fileName] ?? $fileName, $maxBytes, ...$extra);
     }
 }
