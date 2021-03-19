@@ -93,7 +93,8 @@ class HttpDownloaderAdapter extends HttpDownloader
         }
 
         // Instantiate TUF library.
-        $this->fetchers[$url] = FileFetcher::createFromUri($url);
+        $fetcher = GuzzleFileFetcher::createFromUri($url);
+        $this->fetchers[$url] = new UrlMapDecorator($fetcher);
         $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
     }
 
