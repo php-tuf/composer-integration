@@ -10,7 +10,6 @@ use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\EachPromise;
-use GuzzleHttp\Promise\Is;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\StreamInterface;
@@ -62,11 +61,11 @@ class HttpDownloaderAdapter extends HttpDownloader
     /**
      * A queue of promises to settle asynchronously.
      *
-     * @var \ArrayIterator
+     * @var \GuzzleHttp\Promise\PromiseInterface[]
      *
      * @see ::countActiveJobs()
      */
-    private $queue;
+    private $queue = [];
 
     /**
      * The number of pending promises.
@@ -87,7 +86,6 @@ class HttpDownloaderAdapter extends HttpDownloader
     {
         $this->decorated = $decorated;
         $this->storagePath = $storagePath;
-        $this->queue = new \ArrayIterator();
     }
 
     public function register(ComposerRepository $repository)
@@ -280,9 +278,8 @@ class HttpDownloaderAdapter extends HttpDownloader
 
     private function createQueuedPromise(array $request): PromiseInterface
     {
-        $promise = $this->createPromise($request);
-        $this->queue->append($promise);
-        return $promise;
+        array_push($this->queue, $this->createPromise($request));
+        return end($this->queue);
     }
 
     /**
@@ -332,18 +329,9 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function countActiveJobs($index = null)
     {
-        $this->clearSettledPromises();
+        $this->queue = array_filter($this->queue, '\GuzzleHttp\Promise\Is::pending');
         $aggregate = new EachPromise($this->queue, ['concurrency' => 12]);
         $aggregate->promise()->wait();
         return $this->activeJobs + $this->decorated->countActiveJobs($index);
-    }
-
-    private function clearSettledPromises(): void
-    {
-        foreach ($this->queue as $key => $promise) {
-            if (Is::settled($promise)) {
-                unset($this->queue[$key]);
-            }
-        }
     }
 }
