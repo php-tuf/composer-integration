@@ -33,7 +33,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      *
      * @var \Composer\Util\HttpDownloader
      */
-    public $decorated;
+    private $decorated;
 
     /**
      * The instantiated TUF repositories, keyed by URL.
@@ -86,6 +86,11 @@ class HttpDownloaderAdapter extends HttpDownloader
     {
         $this->decorated = $decorated;
         $this->storagePath = $storagePath;
+    }
+
+    public function getDecorated(): HttpDownloader
+    {
+        return $this->decorated;
     }
 
     public function register(ComposerRepository $repository)
@@ -229,7 +234,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         if (isset($options['tuf'])) {
             return $this->add($url, $options)->wait();
         } else {
-            return $this->decorated->get($url, $options);
+            return $this->getDecorated()->get($url, $options);
         }
     }
 
@@ -244,7 +249,7 @@ class HttpDownloaderAdapter extends HttpDownloader
               'options' => $options,
             ]);
         } else {
-            return $this->decorated->add($url, $options);
+            return $this->getDecorated()->add($url, $options);
         }
     }
 
@@ -256,7 +261,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         if (isset($options['tuf'])) {
             return $this->addCopy($url, $to, $options)->wait();
         } else {
-            return $this->decorated->copy($url, $to, $options);
+            return $this->getDecorated()->copy($url, $to, $options);
         }
     }
 
@@ -272,7 +277,7 @@ class HttpDownloaderAdapter extends HttpDownloader
               'copyTo' => $to,
             ]);
         } else {
-            return $this->decorated->addCopy($url, $to, $options);
+            return $this->getDecorated()->addCopy($url, $to, $options);
         }
     }
 
@@ -287,7 +292,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function getOptions()
     {
-        return $this->decorated->getOptions();
+        return $this->getDecorated()->getOptions();
     }
 
     /**
@@ -295,7 +300,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function setOptions(array $options)
     {
-        return $this->decorated->setOptions($options);
+        return $this->getDecorated()->setOptions($options);
     }
 
     /**
@@ -304,7 +309,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function markJobDone()
     {
         $this->activeJobs--;
-        return $this->decorated->markJobDone();
+        return $this->getDecorated()->markJobDone();
     }
 
     /**
@@ -313,7 +318,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function wait($index = null)
     {
         parent::wait($index);
-        return $this->decorated->wait($index);
+        return $this->getDecorated()->wait($index);
     }
 
     /**
@@ -321,7 +326,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function enableAsync()
     {
-        return $this->decorated->enableAsync();
+        return $this->getDecorated()->enableAsync();
     }
 
     /**
@@ -332,6 +337,6 @@ class HttpDownloaderAdapter extends HttpDownloader
         $this->queue = array_filter($this->queue, '\GuzzleHttp\Promise\Is::pending');
         $aggregate = new EachPromise($this->queue, ['concurrency' => 12]);
         $aggregate->promise()->wait();
-        return $this->activeJobs + $this->decorated->countActiveJobs($index);
+        return $this->activeJobs + $this->getDecorated()->countActiveJobs($index);
     }
 }

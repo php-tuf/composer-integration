@@ -87,7 +87,7 @@ class Plugin implements PluginInterface
         $downloader = $composer->getLoop()->getHttpDownloader();
 
         if ($downloader instanceof HttpDownloaderAdapter) {
-            $this->setHttpDownloader($composer, $io, $downloader->decorated);
+            $this->setHttpDownloader($composer, $io, $downloader->getDecorated());
         }
     }
 
