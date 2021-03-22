@@ -44,6 +44,11 @@ class PackageLoader extends ArrayLoader
         /** @var \Composer\Package\CompletePackage $package */
         foreach ($packages as $package) {
             $options = $package->getTransportOptions();
+            // In order for the TUF-aware HTTP downloader to grab this package,
+            // we need to store the URL of the repository and the package's
+            // target key (as known to TUF). We need to store these in a way
+            // that can be serialized to and from JSON, since this will be
+            // stored in the lock file.
             $options['tuf'] = [
               $this->url,
               hash('sha256', $package->getDistUrl()),

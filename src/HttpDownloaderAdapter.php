@@ -25,6 +25,14 @@ use Tuf\Exception\RepoFileNotFound;
  * This class extends \Composer\Util\HttpDownloader in order to satisfy type
  * hints, but decorates an existing instance in order to preserve as much state
  * as possible.
+ *
+ * By "TUF-aware", I mean this class knows about all instantiated TUF
+ * repositories, and knows to delegate certain HTTP requests to TUF, which will
+ * transparently do whatever downloading and verification is needed. The
+ * expected flow is that a TUF-aware Composer repository will call this class'
+ * ::register() method, which will create a TUF repository object corresponding
+ * to that Composer repository. Then later on, individual packages can associate
+ * a TUF target key with an arbitrary URL by calling ::setPackageUrl().
  */
 class HttpDownloaderAdapter extends HttpDownloader
 {
@@ -47,7 +55,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      *
      * @var \Tuf\Client\RepoFileFetcherInterface[]
      */
-    public $fetchers = [];
+    private $fetchers = [];
 
     /**
      * The base path where persistent TUF data should be stored.
