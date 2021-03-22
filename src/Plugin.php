@@ -3,10 +3,13 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
+use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Factory;
 use Composer\Installer\LibraryInstaller;
 use Composer\IO\IOInterface;
+use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
+use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
@@ -15,8 +18,38 @@ use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 
-class Plugin implements PluginInterface
+class Plugin implements PluginInterface, EventSubscriberInterface
 {
+    /**
+     * {@inheritDoc}
+     */
+    public static function getSubscribedEvents()
+    {
+        return [
+          PluginEvents::PRE_FILE_DOWNLOAD => ['preFileDownload', -1000],
+        ];
+    }
+
+    /**
+     * Reacts when a package is about to be downloaded.
+     *
+     * @param \Composer\Plugin\PreFileDownloadEvent $event
+     *   The event object.
+     */
+    public function preFileDownload(PreFileDownloadEvent $event): void
+    {
+        if ($event->getType() === 'package') {
+            /** @var \Composer\Package\PackageInterface $package */
+            $package = $event->getContext();
+            // If the package is protected by TUF, its repository URL and target
+            // key should have been set by
+            // \Tuf\ComposerIntegration\PackageLoader::loadPackages().
+            if (array_key_exists('tuf', $package->getTransportOptions())) {
+                $event->getHttpDownloader()->setPackageUrl($package, $event->getProcessedUrl());
+            }
+        }
+    }
+
     /**
      * {@inheritDoc}
      */

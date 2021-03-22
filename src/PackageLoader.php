@@ -12,36 +12,26 @@ use Composer\Repository\ComposerRepository;
 class PackageLoader extends ArrayLoader
 {
     /**
-     * The repository which contains the packages.
+     * The URL of the repository which contains the packages.
      *
-     * @var \Composer\Repository\ComposerRepository
+     * @var string
      */
-    private $repository;
-
-    /**
-     * The TUF-aware HTTP downloader.
-     *
-     * @var \Tuf\ComposerIntegration\HttpDownloaderAdapter
-     */
-    private $downloader;
+    private $url;
 
     /**
      * PackageLoader constructor.
      *
-     * @param \Composer\Repository\ComposerRepository $repository
-     *   The repository which contains the packages being loaded.
-     * @param \Tuf\ComposerIntegration\HttpDownloaderAdapter $downloader
-     *   The TUF-aware HTTP downloader.
+     * @param string $repository
+     *   The URL of the repository which contains the packages being loaded.
      * @param \Composer\Package\Version\VersionParser|null $parser
      *   (optional) The version parser.
      * @param false $loadOptions
      *   (optional) I have no idea what this does. Passed to the parent.
      */
-    public function __construct(ComposerRepository $repository, HttpDownloaderAdapter $downloader, VersionParser $parser = null, $loadOptions = false)
+    public function __construct(string $url, VersionParser $parser = null, $loadOptions = false)
     {
         parent::__construct($parser, $loadOptions);
-        $this->repository = $repository;
-        $this->downloader = $downloader;
+        $this->url = $url;
     }
 
     /**
@@ -53,7 +43,12 @@ class PackageLoader extends ArrayLoader
 
         /** @var \Composer\Package\CompletePackage $package */
         foreach ($packages as $package) {
-            $this->downloader->registerPackage($package, $this->repository);
+            $options = $package->getTransportOptions();
+            $options['tuf'] = [
+              $this->url,
+              hash('sha256', $package->getDistUrl()),
+            ];
+            $package->setTransportOptions($options);
         }
         return $packages;
     }

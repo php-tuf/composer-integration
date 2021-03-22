@@ -35,6 +35,6 @@ class TufValidatedComposerRepository extends ComposerRepository
         $httpDownloader->register($this);
         // The parent constructor sets up a package loader, so we need to
         // override that with our TUF-aware one.
-        $this->loader = new PackageLoader($this, $httpDownloader, $this->versionParser);
+        $this->loader = new PackageLoader($repoConfig['url'], $this->versionParser);
     }
 }
