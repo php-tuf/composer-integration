@@ -33,6 +33,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * Reacts when a package is about to be downloaded.
      *
+     * Note that this event handler is undebuggable due to some inexplicable
+     * bananapantsing in Composer's plugin manager. It copies the code of this
+     * class, renames it, and evals it into existence...which means it's not
+     * debuggable, since the code doesn't concretely exist in a place where
+     * Xdebug can find it. Dafuq! (See
+     * \Composer\Plugin\PluginManager::registerPackage() if you don't believe
+     * me.)
+     *
      * @param \Composer\Plugin\PreFileDownloadEvent $event
      *   The event object.
      */

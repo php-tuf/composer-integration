@@ -133,6 +133,11 @@ class HttpDownloaderAdapter extends HttpDownloader
     /**
      * Associates a TUF-validated package with a specific URL.
      *
+     * It is assumed that the package's transport options include an indexed
+     * array of information needed by TUF. In order:
+     * - The URL of the repository.
+     * - The target key, as known to TUF.
+     *
      * @param \Composer\Package\PackageInterface $package
      *   The package object.
      * @param string $url
