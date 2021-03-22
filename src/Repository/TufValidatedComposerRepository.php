@@ -32,7 +32,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         ];
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
         // Make the HTTP downloader aware of this repository.
-        $httpDownloader->register($this);
+        $httpDownloader->addRepository($this);
         // The parent constructor sets up a package loader, so we need to
         // override that with our TUF-aware one.
         $this->loader = new PackageLoader($repoConfig['url'], $this->versionParser);

@@ -55,6 +55,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     public function activate(Composer $composer, IOInterface $io)
     {
+        // Finish any pending transfers, then swap out the HTTP downloader with
+        // a TUF-aware one.
         $downloader = $composer->getLoop()->getHttpDownloader();
         $downloader->wait();
         $downloader = new HttpDownloaderAdapter($downloader, static::getStoragePath($composer));

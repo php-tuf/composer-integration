@@ -101,7 +101,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         return $this->decorated;
     }
 
-    public function register(ComposerRepository $repository)
+    public function addRepository(ComposerRepository $repository)
     {
         $config = $repository->getRepoConfig();
         $url = $config['url'];
@@ -117,6 +117,9 @@ class HttpDownloaderAdapter extends HttpDownloader
         $fs = new Filesystem();
         $fs->ensureDirectoryExists($repoPath);
 
+        // We expect the repository to have a root metadata file in a known
+        // good state. Copy that file to our persistent storage location if
+        // it doesn't already exist.
         $rootFile = $repoPath . '/root.json';
         if (!file_exists($rootFile)) {
             $repoConfig = $repository->getRepoConfig();
