@@ -25,7 +25,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         // identifies them by their URL. We need to do this before calling the
         // parent constructor because the options are stored in a private
         // property.
-        // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::register()
+        // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::addRepository()
         // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::createPromise()
         $repoConfig['options']['tuf'] = [
           $repoConfig['url'],

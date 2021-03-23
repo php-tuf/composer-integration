@@ -197,7 +197,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         // If the promise gets rejected because it's a 404, convert that to a
         // \Composer\Downloader\TransportException like the regular
         // HttpDownloader would produce.
-        $reject = function (\Throwable $e) use ($request) {
+        $reject = function (\Throwable $e) {
             $this->markJobDone();
 
             if ($e instanceof \InvalidArgumentException || $e instanceof RepoFileNotFound) {
