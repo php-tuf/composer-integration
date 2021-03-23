@@ -243,9 +243,10 @@ class HttpDownloaderAdapter extends HttpDownloader
         }
 
         $this->activeJobs++;
-        return $this->instances[$repository]
+        $this->queue[] = $this->instances[$repository]
           ->download($target, $fetcherOptions, $this->targets[$repository][$target] ?? null)
           ->then($accept, $reject);
+        return end($this->queue);
     }
 
     /**
@@ -266,7 +267,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function add($url, $options = array())
     {
         if (isset($options['tuf'])) {
-            return $this->createQueuedPromise([
+            return $this->createPromise([
               'url' => $url,
               'options' => $options,
             ]);
@@ -293,7 +294,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function addCopy($url, $to, $options = array())
     {
         if (isset($options['tuf'])) {
-            return $this->createQueuedPromise([
+            return $this->createPromise([
               'url' => $url,
               'options' => $options,
               'copyTo' => $to,
@@ -301,12 +302,6 @@ class HttpDownloaderAdapter extends HttpDownloader
         } else {
             return $this->getDecorated()->addCopy($url, $to, $options);
         }
-    }
-
-    private function createQueuedPromise(array $request): PromiseInterface
-    {
-        array_push($this->queue, $this->createPromise($request));
-        return end($this->queue);
     }
 
     /**
@@ -322,7 +317,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function setOptions(array $options)
     {
-        return $this->getDecorated()->setOptions($options);
+        $this->getDecorated()->setOptions($options);
     }
 
     /**
@@ -331,7 +326,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function markJobDone()
     {
         $this->activeJobs--;
-        return $this->getDecorated()->markJobDone();
+        $this->getDecorated()->markJobDone();
     }
 
     /**
@@ -340,7 +335,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function wait($index = null)
     {
         parent::wait($index);
-        return $this->getDecorated()->wait($index);
+        $this->getDecorated()->wait($index);
     }
 
     /**
@@ -348,7 +343,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      */
     public function enableAsync()
     {
-        return $this->getDecorated()->enableAsync();
+        $this->getDecorated()->enableAsync();
     }
 
     /**
