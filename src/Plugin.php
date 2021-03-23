@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Factory;
-use Composer\Installer\LibraryInstaller;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
