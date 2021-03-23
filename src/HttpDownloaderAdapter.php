@@ -110,7 +110,19 @@ class HttpDownloaderAdapter extends HttpDownloader
         return $this->decorated;
     }
 
-    public function addRepository(ComposerRepository $repository)
+    /**
+     * Registers a Composer repository with TUF.
+     *
+     * If needed, this will create a local directory to store TUF metadata for
+     * the repository. A trusted root metadata file in a known good state is
+     * expected to exist locally, and will be copied into the created directory.
+     *
+     * @param \Composer\Repository\ComposerRepository $repository
+     *   The Composer repository.
+     *
+     * @return void
+     */
+    public function addRepository(ComposerRepository $repository): void
     {
         $config = $repository->getRepoConfig();
         $url = $config['url'];
@@ -131,8 +143,7 @@ class HttpDownloaderAdapter extends HttpDownloader
         // it doesn't already exist.
         $rootFile = $repoPath . '/root.json';
         if (!file_exists($rootFile)) {
-            $repoConfig = $repository->getRepoConfig();
-            $fs->copy(realpath($repoConfig['tuf']['root']), $rootFile);
+            $fs->copy(realpath($config['tuf']['root']), $rootFile);
         }
 
         $this->fetchers[$url] = new UrlMapDecorator(GuzzleFileFetcher::createFromUri($url));
