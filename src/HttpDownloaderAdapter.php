@@ -22,17 +22,18 @@ use Tuf\Exception\RepoFileNotFound;
 /**
  * Provides a TUF-aware adapter for Composer's HTTP downloader.
  *
- * This class extends \Composer\Util\HttpDownloader in order to satisfy type
- * hints, but decorates an existing instance in order to preserve as much state
- * as possible.
- *
  * By "TUF-aware", I mean this class knows about all instantiated TUF
  * repositories, and knows to delegate certain HTTP requests to TUF, which will
  * transparently do whatever downloading and verification is needed. The
  * expected flow is that a TUF-aware Composer repository will call this class'
- * ::register() method, which will create a TUF repository object corresponding
- * to that Composer repository. Then later on, individual packages can associate
- * a TUF target key with an arbitrary URL by calling ::setPackageUrl().
+ * ::addRepository() method, which will create a TUF repository object
+ * corresponding to that Composer repository. Then later on, individual packages
+ * from that repository can associate a TUF target key with an arbitrary URL by
+ * calling ::setPackageUrl(), which is done by the plugin's preFileDownload()
+ * event handler.
+ *
+ * This class extends \Composer\Util\HttpDownloader to satisfy type hints, but
+ * decorates an existing instance to preserve as much state as possible.
  */
 class HttpDownloaderAdapter extends HttpDownloader
 {
@@ -79,6 +80,8 @@ class HttpDownloaderAdapter extends HttpDownloader
      * The number of pending promises.
      *
      * @var int
+     *
+     * @see ::countActiveJobs()
      */
     private $activeJobs = 0;
 
@@ -96,6 +99,12 @@ class HttpDownloaderAdapter extends HttpDownloader
         $this->storagePath = $storagePath;
     }
 
+    /**
+     * Returns the decorated HTTP downloader.
+     *
+     * @return \Composer\Util\HttpDownloader
+     *   The HTTP downloader that this class is decorating.
+     */
     public function getDecorated(): HttpDownloader
     {
         return $this->decorated;

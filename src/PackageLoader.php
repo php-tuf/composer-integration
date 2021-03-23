@@ -51,7 +51,7 @@ class PackageLoader extends ArrayLoader
             // stored in the lock file.
             $options['tuf'] = [
               $this->url,
-              hash('sha256', $package->getDistUrl()),
+              $package->getName() . '/' . $package->getVersion(),
             ];
             $package->setTransportOptions($options);
         }
