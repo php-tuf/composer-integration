@@ -153,7 +153,7 @@ class HttpDownloaderAdapter extends HttpDownloader
             $fs->copy(realpath($config['tuf']['root']), $rootFile);
         }
 
-        $this->fetchers[$url] = new GuzzleFileFetcher::createFromUri($url);
+        $this->fetchers[$url] = GuzzleFileFetcher::createFromUri($url);
         $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
     }
 
