@@ -50,8 +50,8 @@ class PackageLoader extends ArrayLoader
             // that can be serialized to and from JSON, since this will be
             // stored in the lock file.
             $options['tuf'] = [
-              $this->url,
-              $package->getName() . '/' . $package->getVersion(),
+              'repository' => $this->url,
+              'target' => $package->getName() . '/' . $package->getVersion(),
             ];
             $package->setTransportOptions($options);
         }

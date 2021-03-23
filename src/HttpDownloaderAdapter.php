@@ -2,6 +2,7 @@
 
 namespace Tuf\ComposerIntegration;
 
+use Composer\Downloader\FilesystemException;
 use Composer\Downloader\TransportException;
 use Composer\Package\PackageInterface;
 use Composer\Repository\ComposerRepository;
@@ -49,14 +50,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      *
      * @var Updater[]
      */
-    private $instances = [];
-
-    /**
-     * The instantiated TUF file fetchers, keyed by repository URL.
-     *
-     * @var \Tuf\Client\RepoFileFetcherInterface[]
-     */
-    private $fetchers = [];
+    private $tufUpdaters = [];
 
     /**
      * The base path where persistent TUF data should be stored.
@@ -120,12 +114,17 @@ class HttpDownloaderAdapter extends HttpDownloader
     /**
      * Registers a Composer repository with TUF.
      *
-     * If needed, this will create a local directory to store TUF metadata for
-     * the repository. A trusted root metadata file in a known good state is
-     * expected to exist locally, and will be copied into the created directory.
+     * This will create a local directory to store TUF metadata for the
+     * the repository, if it doesn't already exit. A trusted root metadata file
+     * in a known good state is expected to exist locally, and will be copied
+     * into the created directory.
      *
      * @param \Composer\Repository\ComposerRepository $repository
      *   The Composer repository.
+     *
+     * @throws \Composer\Downloader\FilesystemException
+     *   Thrown if the root metadata file can't be copied into the metadata
+     *   directory.
      *
      * @return void
      */
@@ -150,11 +149,14 @@ class HttpDownloaderAdapter extends HttpDownloader
         // it doesn't already exist.
         $rootFile = $repoPath . '/root.json';
         if (!file_exists($rootFile)) {
-            $fs->copy(realpath($config['tuf']['root']), $rootFile);
+            $sourcePath = realpath($config['tuf']['root']);
+            if (!$fs->copy($sourcePath, $rootFile)) {
+                throw new FilesystemException("Could not copy '$sourcePath' to '$rootFile");
+            }
         }
 
-        $this->fetchers[$url] = GuzzleFileFetcher::createFromUri($url);
-        $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
+        $fetcher = GuzzleFileFetcher::createFromUri($url);
+        $this->tufUpdaters[$url] = new Updater($fetcher, [], new FileStorage($repoPath));
     }
 
     /**
@@ -175,7 +177,9 @@ class HttpDownloaderAdapter extends HttpDownloader
     public function setPackageUrl(PackageInterface $package, string $url): void
     {
         $options = $package->getTransportOptions();
-        list ($repository, $target) = $options['tuf'];
+        $tuf = $options['tuf'];
+        $repository = $tuf['repository'];
+        $target = $tuf['target'];
         $this->targets[$repository][$target] = $url;
     }
 
@@ -234,16 +238,16 @@ class HttpDownloaderAdapter extends HttpDownloader
             throw $e;
         };
 
-        list ($repository) = $request['options']['tuf'];
-        if (isset($request['options']['tuf'][1])) {
-            $target = $request['options']['tuf'][1];
+        $repository = $request['options']['tuf']['repository'];
+        if (isset($request['options']['tuf']['target'])) {
+            $target = $request['options']['tuf']['target'];
         } else {
             $target = parse_url($request['url'], PHP_URL_PATH);
             $target = ltrim($target, '/');
         }
 
         $this->activeJobs++;
-        $this->queue[] = $this->instances[$repository]
+        $this->queue[] = $this->tufUpdaters[$repository]
           ->download($target, $fetcherOptions, $this->targets[$repository][$target] ?? null)
           ->then($accept, $reject);
         return end($this->queue);
