@@ -86,6 +86,13 @@ class HttpDownloaderAdapter extends HttpDownloader
     private $activeJobs = 0;
 
     /**
+     * Target URLs, grouped by repository URL and keyed by target.
+     *
+     * @var array[]
+     */
+    private $targets = [];
+
+    /**
      * HttpDownloaderAdapter constructor.
      *
      * @param \Composer\Util\HttpDownloader $decorated
@@ -146,7 +153,7 @@ class HttpDownloaderAdapter extends HttpDownloader
             $fs->copy(realpath($config['tuf']['root']), $rootFile);
         }
 
-        $this->fetchers[$url] = new UrlMapDecorator(GuzzleFileFetcher::createFromUri($url));
+        $this->fetchers[$url] = new GuzzleFileFetcher::createFromUri($url);
         $this->instances[$url] = new Updater($this->fetchers[$url], [], new FileStorage($repoPath));
     }
 
@@ -169,7 +176,7 @@ class HttpDownloaderAdapter extends HttpDownloader
     {
         $options = $package->getTransportOptions();
         list ($repository, $target) = $options['tuf'];
-        $this->fetchers[$repository][$target] = $url;
+        $this->targets[$repository][$target] = $url;
     }
 
     /**
@@ -236,8 +243,9 @@ class HttpDownloaderAdapter extends HttpDownloader
         }
 
         $this->activeJobs++;
-        $tuf = $this->instances[$repository];
-        return $tuf->download($target, $fetcherOptions)->then($accept, $reject);
+        return $this->instances[$repository]
+          ->download($target, $fetcherOptions, $this->targets[$repository][$target] ?? null)
+          ->then($accept, $reject);
     }
 
     /**
