@@ -203,6 +203,13 @@ class HttpDownloaderAdapter extends HttpDownloader
         if ($request['copyTo']) {
             $fetcherOptions[RequestOptions::SINK] = $request['copyTo'];
         }
+        // Ensure that any additional HTTP headers are passed through to Guzzle.
+        if (isset($request['options']['http']['header'])) {
+            foreach ((array) $request['options']['http']['header'] as $header) {
+                list ($header, $value) = explode(':', $header, 2);
+                $fetcherOptions[RequestOptions::HEADERS][$header] = trim($value);
+            }
+        }
 
         // When the promise is fulfilled, convert it to an instance of
         // \Composer\Util\Http\Response that resembles what the regular
@@ -238,6 +245,11 @@ class HttpDownloaderAdapter extends HttpDownloader
             throw $e;
         };
 
+        // If this function is executing, we expect the TUF repository URL, plus
+        // an optional target ID, to be in the request options. If no target ID
+        // is given, derive it from the request URL.
+        // @see \Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository::__construct()
+        // @see \Tuf\ComposerIntegration\PackageLoader::loadPackages()
         $repository = $request['options']['tuf']['repository'];
         if (isset($request['options']['tuf']['target'])) {
             $target = $request['options']['tuf']['target'];

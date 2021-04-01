@@ -28,7 +28,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::addRepository()
         // @see \Tuf\ComposerIntegration\HttpDownloaderAdapter::createPromise()
         $repoConfig['options']['tuf'] = [
-          $repoConfig['url'],
+          'repository' => $repoConfig['url'],
         ];
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
         // Make the HTTP downloader aware of this repository.
