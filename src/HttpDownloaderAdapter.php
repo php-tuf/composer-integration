@@ -18,6 +18,7 @@ use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\ResponseStream;
 use Tuf\Client\Updater;
+use Tuf\Exception\PotentialAttackException\InvalidHashException;
 use Tuf\Exception\RepoFileNotFound;
 
 /**
@@ -216,29 +217,26 @@ class HttpDownloaderAdapter extends HttpDownloader
         // HttpDownloader would produce.
         $accept = function (ResponseStream $stream) use ($request) {
             $this->markJobDone();
-
-            $response = $stream->getResponse();
-            $headers = [];
-            foreach ($response->getHeaders() as $name => $values) {
-                $headers[] = "$name: " . reset($values);
-            }
-
-            $uri = $stream->getMetadata('uri');
-            if ($uri && file_exists($uri)) {
-                $contents = "$uri~";
-            } else {
-                $contents = $stream->getContents();
-            }
-            return new Response($request, $response->getStatusCode(), $headers, $contents);
+            return static::createResponse($request, $stream);
         };
 
         // If the promise gets rejected because it's a 404, convert that to a
         // \Composer\Downloader\TransportException like the regular
         // HttpDownloader would produce.
-        $reject = function (\Throwable $e) {
+        $reject = function (\Throwable $e) use ($request) {
             $this->markJobDone();
 
-            if ($e instanceof \InvalidArgumentException || $e instanceof RepoFileNotFound) {
+            // If the response was a 304 (i.e., doesn't include a body), TUF
+            // validation will fail. In that case, convert the error into a
+            // legitimate empty response.
+            if ($e instanceof InvalidHashException) {
+                /** @var \Tuf\Client\ResponseStream $stream */
+                $stream = $e->getStream();
+
+                if ($stream->getResponse()->getStatusCode() === 304 && $stream->getSize() === 0) {
+                    return static::createResponse($request, $stream, false);
+                }
+            } elseif ($e instanceof \InvalidArgumentException || $e instanceof RepoFileNotFound) {
                 $e = new TransportException($e->getMessage(), $e->getCode(), $e);
                 $e->setStatusCode(404);
             }
@@ -263,6 +261,27 @@ class HttpDownloaderAdapter extends HttpDownloader
           ->download($target, $fetcherOptions, $this->targets[$repository][$target] ?? null)
           ->then($accept, $reject);
         return end($this->queue);
+    }
+
+    private static function createResponse(array $request, ResponseStream $stream, bool $includeBody = true): Response
+    {
+        $response = $stream->getResponse();
+        $headers = [];
+        foreach ($response->getHeaders() as $name => $values) {
+            $headers[] = "$name: " . reset($values);
+        }
+
+        if ($includeBody) {
+            $uri = $stream->getMetadata('uri');
+            if ($uri && file_exists($uri)) {
+                $contents = "$uri~";
+            } else {
+                $contents = $stream->getContents();
+            }
+        } else {
+            $contents = '';
+        }
+        return new Response($request, $response->getStatusCode(), $headers, $contents);
     }
 
     /**
