@@ -220,9 +220,6 @@ class HttpDownloaderAdapter extends HttpDownloader
             return static::createResponse($request, $stream);
         };
 
-        // If the promise gets rejected because it's a 404, convert that to a
-        // \Composer\Downloader\TransportException like the regular
-        // HttpDownloader would produce.
         $reject = function (\Throwable $e) use ($request) {
             $this->markJobDone();
 
@@ -236,10 +233,14 @@ class HttpDownloaderAdapter extends HttpDownloader
                 if ($stream->getResponse()->getStatusCode() === 304 && $stream->getSize() === 0) {
                     return static::createResponse($request, $stream, false);
                 }
+            // If the target doesn't exist or could not be found by the file
+            // fetcher, convert it to a regular TransportException, which is
+            // what the regular HttpDownloader would throw.
             } elseif ($e instanceof \InvalidArgumentException || $e instanceof RepoFileNotFound) {
                 $e = new TransportException($e->getMessage(), $e->getCode(), $e);
                 $e->setStatusCode(404);
             }
+            // In all other cases, just re-throw the exception.
             throw $e;
         };
 
