@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies with pipenv
         run: |
           if [ -f Pipfile.lock ]; then pipenv --three install; fi
-        working-directory: fixtures
+        working-directory: ./fixtures
       - name: Generate fixture
         run: pipenv run python generate.py
-        working-directory: fixtures
+        working-directory: ./fixtures
