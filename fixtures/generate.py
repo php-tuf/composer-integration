@@ -51,7 +51,7 @@ def generate_fixture():
     repository.targets.add_targets([
         'packages.json',
         'files/packages/8/p2/drupal/token.json',
-	    'drupal/token/1.9.0.0'
+        'drupal/token/1.9.0.0'
     ])
 
     # Write and publish the repository.

@@ -1,0 +1,26 @@
+name: build-fixture
+on:
+  - push
+defaults:
+  run:
+    working-directory: ./fixtures
+jobs:
+  fixture:
+    name: Generate test fixture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install pip and pipenv
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pipenv
+      - name: Install dependencies with pipenv
+        run: |
+          if [ -f Pipfile.lock ]; then pipenv --three install; fi
+      - name: Generate fixture
+        run: |
+          pipenv run python generate.py
