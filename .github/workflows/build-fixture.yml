@@ -1,0 +1,15 @@
+name: build-fixture
+on:
+  - push
+jobs:
+  install-pipenv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pipenv and generate fixture
+        run: |
+          pipenv install
+          pipenv run python generate.py
+        working-directory: fixtures
+      - name: Install test project
+        run: composer require php-tuf/composer-integration:dev-main
+        working-directory: fixtures/test-project
