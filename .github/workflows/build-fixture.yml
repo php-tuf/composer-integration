@@ -24,18 +24,10 @@ jobs:
       - name: Generate fixture
         run: |
           pipenv run python generate.py
-      - name: Install PHP
-        uses: nanasess/setup-php@master
+      - name: Install PHP and Composer 2
+        uses: shivammathur/setup-php@v2
         with:
           php-version: 7.2
+          tools: 'composer:v2'
       - name: Run PHP server
         run: 'php -S localhost:8080 &'
-      - name: Install test project dependencies
-        uses: php-actions/composer@v5
-        with:
-          version: 2
-          dev: no
-          command: require
-          args: 'php-tuf/composer-integration:dev-${{ env.GITHUB_REF }}'
-          php_version: 7.2
-          working_dir: ./fixtures/test-project
