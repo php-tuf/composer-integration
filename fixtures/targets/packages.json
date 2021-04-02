@@ -1,7 +1,5 @@
 {
     "packages": [],
-    "metadata-url": "/composer-repo/p2/%package%.json",
-    "available-package-regexes": ["drupal/*"],
-    "search": "https://packagist.org/search.json?q=%query%&type=%type%",
-    "providers-api": "https://packagist.org/providers/%package%.json"
+    "metadata-url": "/files/packages/8/p2/%package%.json",
+    "available-package-regexes": ["drupal/*"]
 }
