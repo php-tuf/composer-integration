@@ -24,6 +24,11 @@ jobs:
       - name: Generate fixture
         run: |
           pipenv run python generate.py
+      - name: Set up PHP server
+        uses: nanasess/setup-php@master
+        with:
+          php-version: 7.2
+        run: 'php -S localhost:8080'
       - name: Install test project dependencies
         uses: php-actions/composer@v5
         with:
