@@ -29,8 +29,8 @@ jobs:
         with:
           php-version: 7.2
           tools: 'composer:v2'
-      - name: Run PHP server
+      - name: Start PHP server
         run: 'php -S localhost:8080 &'
       - name: Install test project dependencies
-        run: 'composer require php-tuf/composer-integration:dev-${{ env.GITHUB_REF }}'
+        run: 'composer require php-tuf/composer-integration:dev-main'
         working-directory: ./fixtures/test-project
