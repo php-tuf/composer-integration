@@ -48,8 +48,11 @@ def generate_fixture():
     repository.mark_dirty(['root', 'snapshot', 'targets', 'timestamp'])
 
     # Add more targets here as needed.
-    repository.targets.add_targets(['packages.json'])
-    repository.targets.add_targets(['p2/drupal/core.json'])
+    repository.targets.add_targets([
+        'packages.json',
+        'files/packages/8/p2/drupal/token.json',
+        'drupal/token/1.9.0.0'
+    ])
 
     # Write and publish the repository.
     repository.mark_dirty(['snapshot', 'targets', 'timestamp'])
