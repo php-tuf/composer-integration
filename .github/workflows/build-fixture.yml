@@ -19,6 +19,7 @@ jobs:
           python -m pip install --upgrade pipenv
       - name: Install dependencies with pipenv
         run: |
+          pwd
           if [ -f Pipfile.lock ]; then pipenv --three install; fi
       - name: Generate fixture
         run: |
