@@ -5,12 +5,9 @@
     "repositories": [
         {
             "type": "composer",
-            "url": "http://localhost:8080/composer-repo/root.json",
-            "allow_ssl_downgrade": true,
+            "url": "http://localhost:8080",
             "tuf": {
-                "url": "http://localhost:8080/tuf-repo/tufrepo",
-                "initial-root-file": "tuf-root.json",
-                "unsafely-update-root-if-necessary": true
+                "root": "tuf-root.json"
             }
         },
         {
@@ -23,10 +20,6 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {
-        "drupal/core": "^8.0",
-        "php-tuf/composer-integration": "dev-main"
-    },
     "config": {
         "secure-http": false
     }

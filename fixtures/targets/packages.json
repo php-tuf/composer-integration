@@ -2,6 +2,4 @@
     "packages": [],
     "metadata-url": "/p2/%package%.json",
     "available-package-regexes": ["drupal/*"],
-    "search": "https://packagist.org/search.json?q=%query%&type=%type%",
-    "providers-api": "https://packagist.org/providers/%package%.json"
 }
