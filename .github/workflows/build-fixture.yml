@@ -1,6 +1,9 @@
 name: build-fixture
 on:
   - push
+defaults:
+  run:
+    working-directory: ./fixtures
 jobs:
   fixture:
     name: Generate test fixture
@@ -17,7 +20,6 @@ jobs:
       - name: Install dependencies with pipenv
         run: |
           if [ -f Pipfile.lock ]; then pipenv --three install; fi
-        working-directory: ./fixtures
       - name: Generate fixture
-        run: pipenv run python generate.py
-        working-directory: ./fixtures
+        run: |
+          pipenv run python generate.py
