@@ -29,7 +29,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     {
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
 
-        if (!empty($repoConfig['tuf'])) {
+        if (!empty($repoConfig['tuf']['url'])) {
             $tufConfig = $repoConfig['tuf'];
 
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
