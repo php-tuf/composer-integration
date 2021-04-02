@@ -1,5 +1,5 @@
 {
     "packages": [],
     "metadata-url": "/p2/%package%.json",
-    "available-package-regexes": ["drupal/*"],
+    "available-package-regexes": ["drupal/*"]
 }
