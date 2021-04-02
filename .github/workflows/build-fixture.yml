@@ -24,3 +24,13 @@ jobs:
       - name: Generate fixture
         run: |
           pipenv run python generate.py
+      - name: Install PHP and Composer 2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 7.2
+          tools: 'composer:v2'
+      - name: Start PHP server
+        run: 'php -S localhost:8080 &'
+      - name: Install test project dependencies
+        run: 'composer require php-tuf/composer-integration:dev-wip'
+        working-directory: ./fixtures/test-project
