@@ -7,6 +7,7 @@ jobs:
     steps:
       - name: Install pipenv and generate fixture
         run: |
+          sudo apt-get install pipenv python3-dev libffi-dev
           pipenv install
           pipenv run python generate.py
         working-directory: fixtures
