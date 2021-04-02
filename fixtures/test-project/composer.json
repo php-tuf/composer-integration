@@ -23,11 +23,8 @@
         }
     ],
     "minimum-stability": "dev",
-    "require": {
-        "drupal/core": "^8.0",
-        "php-tuf/composer-integration": "dev-main"
-    },
     "config": {
         "secure-http": false
-    }
+    },
+    "prefer-stable": true
 }

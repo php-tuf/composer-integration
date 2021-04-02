@@ -24,3 +24,12 @@ jobs:
       - name: Generate fixture
         run: |
           pipenv run python generate.py
+      - name: Install test project dependencies
+        uses: php-actions/composer@v5
+        with:
+          version: 2
+          dev: no
+          command: require
+          args: 'php-tuf/composer-integration:dev-${{ env.GITHUB_REF }}'
+          php_version: 7.2
+          working_dir: ./fixtures/test-project
