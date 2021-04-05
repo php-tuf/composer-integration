@@ -122,6 +122,9 @@ class HttpDownloaderAdapter extends HttpDownloader
      *
      * @param \Composer\Repository\ComposerRepository $repository
      *   The Composer repository.
+     * @param \Tuf\Client\Updater $updater
+     *   The TUF instance to associate with the repository. Meant only for
+     *   internal unit testing purposes.
      *
      * @throws \Composer\Downloader\FilesystemException
      *   Thrown if the root metadata file can't be copied into the metadata
@@ -129,7 +132,7 @@ class HttpDownloaderAdapter extends HttpDownloader
      *
      * @return void
      */
-    public function addRepository(ComposerRepository $repository): void
+    public function addRepository(ComposerRepository $repository, Updater $updater = null): void
     {
         $config = $repository->getRepoConfig();
         $url = $config['url'];
@@ -156,8 +159,11 @@ class HttpDownloaderAdapter extends HttpDownloader
             }
         }
 
-        $fetcher = GuzzleFileFetcher::createFromUri($url);
-        $this->tufUpdaters[$url] = new Updater($fetcher, [], new FileStorage($repoPath));
+        if (empty($updater)) {
+            $fetcher = GuzzleFileFetcher::createFromUri($url);
+            $updater = new Updater($fetcher, [], new FileStorage($repoPath));
+        }
+        $this->tufUpdaters[$url] = $updater;
     }
 
     /**
