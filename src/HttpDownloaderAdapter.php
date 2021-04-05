@@ -18,6 +18,7 @@ use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\ResponseStream;
 use Tuf\Client\Updater;
+use Tuf\Exception\NotFoundException;
 use Tuf\Exception\PotentialAttackException\InvalidHashException;
 use Tuf\Exception\RepoFileNotFound;
 
@@ -242,8 +243,8 @@ class HttpDownloaderAdapter extends HttpDownloader
             // If the target doesn't exist or could not be found by the file
             // fetcher, convert it to a regular TransportException, which is
             // what the regular HttpDownloader would throw.
-            } elseif ($e instanceof \InvalidArgumentException || $e instanceof RepoFileNotFound) {
-                $e = new TransportException($e->getMessage(), $e->getCode(), $e);
+            } elseif ($e instanceof NotFoundException || $e instanceof RepoFileNotFound) {
+                $e = new TransportException($e->getMessage(), 404, $e);
                 $e->setStatusCode(404);
             }
             // In all other cases, just re-throw the exception.

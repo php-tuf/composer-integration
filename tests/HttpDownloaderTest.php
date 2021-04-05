@@ -2,6 +2,7 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
+use Composer\Downloader\TransportException;
 use Composer\Util\Filesystem;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -14,6 +15,7 @@ use Tuf\Client\ResponseStream;
 use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\HttpDownloaderAdapter;
 use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
+use Tuf\Exception\NotFoundException;
 use Tuf\Exception\PotentialAttackException\InvalidHashException;
 use Tuf\Exception\RepoFileNotFound;
 
@@ -89,6 +91,9 @@ class HttpDownloaderTest extends TestCase
         $responses[] = new RejectedPromise($error);
         // A RepoFileNotFound (i.e., a 404), which should result in an exception.
         $responses[] = new RejectedPromise(new RepoFileNotFound('Ask moar nicely.'));
+        // A NotFoundException (i.e., invalid target), which should also result
+        // in an exception.
+        $responses[] = new RejectedPromise(new NotFoundException('packages.json', 'Target'));
 
         $updater = $this->prophesize(Updater::class);
         $updater->download('packages.json', Argument::cetera())
@@ -115,11 +120,23 @@ class HttpDownloaderTest extends TestCase
         $this->assertSame(304, $response->getStatusCode());
         $this->assertEmpty($response->getBody());
 
-        // A RepoFileNotFound exception should be converted to a native Composer
-        // TransportException.
-        $this->expectException('\Composer\Downloader\TransportException');
-        $this->expectExceptionMessage('Ask moar nicely.');
-        $this->downloader->get($url, $options);
+        // RepoFileNotFound and NotFoundException should be converted to native
+        // Composer TransportExceptions.
+        try {
+            $this->downloader->get($url, $options);
+            $this->fail('Expected a TransportException to be thrown but it was not.');
+        } catch (TransportException $e) {
+            $this->assertSame('Ask moar nicely.', $e->getMessage());
+            $this->assertSame(404, $e->getCode());
+        }
+
+        try {
+            $this->downloader->get($url, $options);
+            $this->fail('Expected a TransportException to be thrown but it was not.');
+        } catch (TransportException $e) {
+            $this->assertSame('Target not found: packages.json', $e->getMessage());
+            $this->assertSame(404, $e->getCode());
+        }
     }
 
     /**

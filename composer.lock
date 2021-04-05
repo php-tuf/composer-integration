@@ -439,12 +439,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-tuf/php-tuf.git",
-                "reference": "9838730b9d1504d935c7100efaad6d5eb7974528"
+                "reference": "d24ebc6d8daa02f157fa1e98e87c803ec407d81c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-tuf/php-tuf/zipball/9838730b9d1504d935c7100efaad6d5eb7974528",
-                "reference": "9838730b9d1504d935c7100efaad6d5eb7974528",
+                "url": "https://api.github.com/repos/php-tuf/php-tuf/zipball/d24ebc6d8daa02f157fa1e98e87c803ec407d81c",
+                "reference": "d24ebc6d8daa02f157fa1e98e87c803ec407d81c",
                 "shasum": ""
             },
             "require": {
@@ -498,7 +498,7 @@
                 "MIT"
             ],
             "description": "PHP implementation of The Update Framework (TUF)",
-            "time": "2021-04-01T19:02:50+00:00"
+            "time": "2021-04-05T14:54:55+00:00"
         },
         {
             "name": "psr/http-client",
