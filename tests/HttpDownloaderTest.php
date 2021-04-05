@@ -9,6 +9,7 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Promise\RejectedPromise;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Tuf\Client\ResponseStream;
@@ -137,6 +138,28 @@ class HttpDownloaderTest extends TestCase
             $this->assertSame('Target not found: packages.json', $e->getMessage());
             $this->assertSame(404, $e->getCode());
         }
+
+        // ::copy() should pass the 'sink' option to the updater.
+        $fetcherOptions = [
+          RequestOptions::SINK => '/tmp/file',
+        ];
+        $updater->download('packages.json', $fetcherOptions, null)
+          ->willReturn($responses[0])
+          ->shouldBeCalled();
+        $this->downloader->copy($url, '/tmp/file', $options);
+
+        // Additional HTTP headers should be passed to the updater in the
+        // 'headers' option.
+        $fetcherOptions = [
+          RequestOptions::HEADERS => [
+            'Accept' => 'application/gzip',
+          ],
+        ];
+        $updater->download('packages.json', $fetcherOptions, null)
+            ->willReturn($responses[0])
+            ->shouldBeCalled();
+        $options['http']['header'][] = 'Accept: application/gzip';
+        $this->downloader->get($url, $options);
     }
 
     /**
