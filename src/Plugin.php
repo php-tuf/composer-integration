@@ -3,6 +3,7 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
+use Composer\Config;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
@@ -13,11 +14,12 @@ use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\Filesystem;
-use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
     /**
+     * The repository manager.
+     *
      * @var RepositoryManager
      */
     private $repositoryManager;
@@ -32,6 +34,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         ];
     }
 
+    /**
+     * Reacts when a file, or metadata, is downloaded.
+     *
+     * If the downloaded file or metadata is associated with a TUF-aware Composer
+     * repository, then the downloaded data will be validated by TUF.
+     *
+     * @param PostFileDownloadEvent $event
+     *   The event object.
+     */
     public function postFileDownload(PostFileDownloadEvent $event): void
     {
         $type = $event->getType();
@@ -43,18 +54,39 @@ class Plugin implements PluginInterface, EventSubscriberInterface
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
+            // The repository URL is saved in the package's transport options so that
+            // it will persist even when loaded from the lock file.
+            // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
             $options = $context->getTransportOptions();
             if (array_key_exists('tuf', $options)) {
-                foreach ($this->repositoryManager->getRepositories() as $repository) {
-                    if ($repository instanceof TufValidatedComposerRepository) {
-                        $config = $repository->getRepoConfig();
-                        if ($config['url'] === $options['tuf']['repository']) {
-                            $repository->validatePackage($context, $event->getFileName());
-                        }
-                    }
+                $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
+                if ($repository) {
+                    $repository->validatePackage($context, $event->getFileName());
                 }
             }
         }
+    }
+
+    /**
+     * Looks up a TUF-validated Composer repository by its URL.
+     *
+     * @param string $url
+     *   The repository URL.
+     * @return TufValidatedComposerRepository|null
+     *   The TUF-validated Composer repository with the given URL, or NULL if none
+     *   is currently registered.
+     */
+    private function getRepositoryByUrl(string $url): ?TufValidatedComposerRepository
+    {
+        foreach ($this->repositoryManager->getRepositories() as $repository) {
+            if ($repository instanceof TufValidatedComposerRepository) {
+                $config = $repository->getRepoConfig();
+                if ($config['url'] === $url) {
+                    return $repository;
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -71,9 +103,23 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $newManager = $this->createNewRepositoryManager($composer, $io);
         $this->addTufValidationToRepositories($composer, $newManager, $io);
         $composer->setRepositoryManager($newManager);
-        $this->repositoryManager = $newManager;
+        $this->repositoryManager = $composer->getRepositoryManager();
     }
 
+    /**
+     * Creates a new repository manager.
+     *
+     * The new repository manager will allow Composer repositories to opt into
+     * TUF protection.
+     *
+     * @param Composer $composer
+     *   The Composer instance.
+     * @param IOInterface $io
+     *   The I/O service.
+     *
+     * @return RepositoryManager
+     *   The new repository manager.
+     */
     private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
     {
         $loop = $composer->getLoop();
@@ -86,6 +132,16 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         return $newManager;
     }
 
+    /**
+     * Adds TUF validation to already-instantiated Composer repositories.
+     *
+     * @param Composer $composer
+     *   The Composer instance.
+     * @param RepositoryManager $manager
+     *   The repository manager.
+     * @param IOInterface $io
+     *   The I/O service.
+     */
     private function addTufValidationToRepositories(Composer $composer, RepositoryManager $manager, IOInterface $io): void
     {
         foreach ($composer->getRepositoryManager()->getRepositories() as $repository) {
@@ -101,13 +157,29 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     public function uninstall(Composer $composer, IOInterface $io)
     {
-        return;
-        // @todo Delete all persistent TUF data.
-        $path = static::getStoragePath($composer);
+        $path = static::getStoragePath($composer->getConfig());
         $io->info("Deleting TUF data in $path");
 
         $fs = new Filesystem();
         $fs->removeDirectoryPhp($path);
+    }
+
+    /**
+     * Returns the base path where TUF data will be persisted.
+     *
+     * @param Config $config
+     *   The Composer configuration.
+     *
+     * @return string
+     *   The base path where TUF data will be persisted.
+     */
+    public static function getStoragePath(Config $config): string
+    {
+        return implode(DIRECTORY_SEPARATOR, [
+            rtrim($config->get('vendor-dir'), DIRECTORY_SEPARATOR),
+            'composer',
+            'tuf',
+        ]);
     }
 
     /**

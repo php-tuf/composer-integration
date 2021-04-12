@@ -1,6 +1,6 @@
 <?php
 
-namespace Tuf\ComposerIntegration\Repository;
+namespace Tuf\ComposerIntegration;
 
 use Composer\Config;
 use Composer\Downloader\FilesystemException;
@@ -22,6 +22,8 @@ use Tuf\Client\Updater;
 class TufValidatedComposerRepository extends ComposerRepository
 {
     /**
+     * The TUF updater, if any, for this repository.
+     *
      * @var Updater
      */
     private $updater;
@@ -38,9 +40,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             // Use the repository URL to derive a path where we can persist the TUF
             // data.
             $repoPath = implode(DIRECTORY_SEPARATOR, [
-               rtrim($config->get('vendor-dir'), DIRECTORY_SEPARATOR),
-               'composer',
-               'tuf',
+                Plugin::getStoragePath($config),
                 preg_replace('/[^[:alnum:]\.]/', '-', $url),
             ]);
 
@@ -61,6 +61,9 @@ class TufValidatedComposerRepository extends ComposerRepository
             $fetcher = GuzzleFileFetcher::createFromUri($url);
             $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
 
+            // The Python tool (which generates the server-side TUF repository) will
+            // put all signed files into /targets, so ensure that all downloads are
+            // prefixed with that.
             $repoConfig['url'] .= '/targets';
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
@@ -69,12 +72,18 @@ class TufValidatedComposerRepository extends ComposerRepository
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     protected function configurePackageTransportOptions(PackageInterface $package)
     {
         parent::configurePackageTransportOptions($package);
 
         $options = $package->getTransportOptions();
         $config = $this->getRepoConfig();
+        // Store the information identifying this package to TUF in a format
+        // that can be safely saved to and loaded from the lock file.
+        // @see \Tuf\ComposerIntegration\Plugin::postFileDownload()
         $options['tuf'] = [
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
@@ -82,23 +91,38 @@ class TufValidatedComposerRepository extends ComposerRepository
         $package->setTransportOptions($options);
     }
 
+    /**
+     * Validates downloaded metadata with TUF.
+     *
+     * @param string $url
+     *   The URL from which the metadata was downloaded.
+     * @param Response $response
+     *   The HTTP response for the downloaded metadata.
+     */
     public function validateMetadata(string $url, Response $response): void
     {
         if ($this->updater) {
             $config = $this->getRepoConfig();
             $target = str_replace($config['url'], null, $url);
             $target = ltrim($target, '/');
-            $stream = Utils::streamFor($response->getBody());
-            $this->updater->verify($target, $stream);
+            $this->updater->verify($target, Utils::streamFor($response->getBody()));
         }
     }
 
+    /**
+     * Validates a downloaded package with TUF.
+     *
+     * @param PackageInterface $package
+     *   The downloaded package.
+     * @param string $filename
+     *   The local path of the downloaded file.
+     */
     public function validatePackage(PackageInterface $package, string $filename): void
     {
         if ($this->updater) {
             $options = $package->getTransportOptions();
-            $data = Utils::tryFopen($filename, 'r');
-            $this->updater->verify($options['tuf']['target'], Utils::streamFor($data));
+            $resource = Utils::tryFopen($filename, 'r');
+            $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
         }
     }
 }
