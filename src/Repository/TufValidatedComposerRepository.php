@@ -92,4 +92,13 @@ class TufValidatedComposerRepository extends ComposerRepository
             $this->updater->verify($target, $stream);
         }
     }
+
+    public function validatePackage(PackageInterface $package, string $filename): void
+    {
+        if ($this->updater) {
+            $options = $package->getTransportOptions();
+            $data = Utils::tryFopen($filename, 'r');
+            $this->updater->verify($options['tuf']['target'], Utils::streamFor($data));
+        }
+    }
 }

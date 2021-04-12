@@ -5,6 +5,7 @@ namespace Tuf\ComposerIntegration;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
+use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PostFileDownloadEvent;
@@ -17,6 +18,11 @@ use Tuf\ComposerIntegration\Repository\TufValidatedComposerRepository;
 class Plugin implements PluginInterface, EventSubscriberInterface
 {
     /**
+     * @var RepositoryManager
+     */
+    private $repositoryManager;
+
+    /**
      * {@inheritDoc}
      */
     public static function getSubscribedEvents()
@@ -28,10 +34,25 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
     public function postFileDownload(PostFileDownloadEvent $event): void
     {
-        if ($event->getType() === 'metadata') {
-            $context = $event->getContext();
+        $type = $event->getType();
+        /** @var array|PackageInterface $context */
+        $context = $event->getContext();
+
+        if ($type === 'metadata') {
             if ($context['repository'] instanceof TufValidatedComposerRepository) {
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
+            }
+        } elseif ($type === 'package') {
+            $options = $context->getTransportOptions();
+            if (array_key_exists('tuf', $options)) {
+                foreach ($this->repositoryManager->getRepositories() as $repository) {
+                    if ($repository instanceof TufValidatedComposerRepository) {
+                        $config = $repository->getRepoConfig();
+                        if ($config['url'] === $options['tuf']['repository']) {
+                            $repository->validatePackage($context, $event->getFileName());
+                        }
+                    }
+                }
             }
         }
     }
@@ -50,6 +71,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $newManager = $this->createNewRepositoryManager($composer, $io);
         $this->addTufValidationToRepositories($composer, $newManager, $io);
         $composer->setRepositoryManager($newManager);
+        $this->repositoryManager = $newManager;
     }
 
     private function createNewRepositoryManager(Composer $composer, IOInterface $io): RepositoryManager
