@@ -439,12 +439,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-tuf/php-tuf.git",
-                "reference": "d24ebc6d8daa02f157fa1e98e87c803ec407d81c"
+                "reference": "0307adcac7afbfcbe25fdde1205b12bc61003d2f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-tuf/php-tuf/zipball/d24ebc6d8daa02f157fa1e98e87c803ec407d81c",
-                "reference": "d24ebc6d8daa02f157fa1e98e87c803ec407d81c",
+                "url": "https://api.github.com/repos/php-tuf/php-tuf/zipball/0307adcac7afbfcbe25fdde1205b12bc61003d2f",
+                "reference": "0307adcac7afbfcbe25fdde1205b12bc61003d2f",
                 "shasum": ""
             },
             "require": {
@@ -457,7 +457,6 @@
                 "symfony/validator": "^4.4 || ^5"
             },
             "require-dev": {
-                "dealerdirect/phpcodesniffer-composer-installer": "dev-master",
                 "php-tuf/phpcodesniffer-standard": "dev-main",
                 "phpunit/phpunit": "^8.5.8|^9",
                 "symfony/phpunit-bridge": "^5"
@@ -498,7 +497,7 @@
                 "MIT"
             ],
             "description": "PHP implementation of The Update Framework (TUF)",
-            "time": "2021-04-05T14:54:55+00:00"
+            "time": "2021-04-09T17:35:19+00:00"
         },
         {
             "name": "psr/http-client",
