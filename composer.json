@@ -40,7 +40,7 @@
         "class": "Tuf\\ComposerIntegration\\Plugin"
     },
     "require-dev": {
-        "composer/composer": "^2",
+        "composer/composer": "dev-master",
         "phpunit/phpunit": "^9.5"
     },
     "scripts": {
