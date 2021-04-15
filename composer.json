@@ -28,6 +28,11 @@
         "composer-plugin-api": "^2.0",
         "php-tuf/php-tuf": "dev-main"
     },
+    "config": {
+        "platform": {
+            "php": "7.2.5"
+        }
+    },
     "conflict": {
         "zaporylie/composer-drupal-optimizations": "*"
     },
@@ -40,7 +45,8 @@
         "class": "Tuf\\ComposerIntegration\\Plugin"
     },
     "require-dev": {
-        "composer/composer": "dev-master"
+        "composer/composer": "dev-master",
+        "phpunit/phpunit": "^8"
     },
     "scripts": {
         "make-fixture": [
@@ -53,6 +59,7 @@
         "post-update-cmd": [
             "cp -f ./vendor/php-tuf/php-tuf/Pipfile* .",
             "ln -s -f ./targets/packages.json ."
-        ]
+        ],
+        "test": "phpunit ./tests"
     }
 }
