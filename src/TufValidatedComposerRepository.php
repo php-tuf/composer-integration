@@ -65,6 +65,8 @@ class TufValidatedComposerRepository extends ComposerRepository
             // put all signed files into /targets, so ensure that all downloads are
             // prefixed with that.
             $repoConfig['url'] .= '/targets';
+            // Ensure that metadata downloads are constrained to a maximum size.
+            $repoConfig['options']['max_file_size'] = Updater::MAXIMUM_DOWNLOAD_BYTES;
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
@@ -87,6 +89,10 @@ class TufValidatedComposerRepository extends ComposerRepository
         $options['tuf'] = [
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
+        ];
+        // Constrain the download to a maximum size.
+        $options += [
+            'max_file_size' => Updater::MAXIMUM_DOWNLOAD_BYTES,
         ];
         $package->setTransportOptions($options);
     }
