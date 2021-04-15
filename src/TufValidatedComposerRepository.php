@@ -3,15 +3,16 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Config;
-use Composer\Downloader\FilesystemException;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use Composer\Repository\ComposerRepository;
+use Composer\Repository\RepositorySecurityException;
 use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
+use Psr\Http\Message\StreamInterface;
 use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Client\Updater;
@@ -36,6 +37,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = $repoConfig['url'];
 
         if (isset($repoConfig['tuf'])) {
+            // @todo Validate the TUF configuration.
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
             // Use the repository URL to derive a path where we can persist the TUF
             // data.
@@ -47,19 +49,35 @@ class TufValidatedComposerRepository extends ComposerRepository
             $fs = new Filesystem();
             $fs->ensureDirectoryExists($repoPath);
 
-            // We expect the repository to have a root metadata file in a known
-            // good state. Copy that file to our persistent storage location if
-            // it doesn't already exist.
-            $rootFile = $repoPath . '/root.json';
-            if (!file_exists($rootFile)) {
-                $sourcePath = realpath($repoConfig['tuf']['root']);
-                if (!$fs->copy($sourcePath, $rootFile)) {
-                    throw new FilesystemException("Could not copy '$sourcePath' to '$rootFile");
-                }
-            }
-
             $fetcher = GuzzleFileFetcher::createFromUri($url);
             $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
+
+            // If we don't yet have up-to-date TUF metadata in place, download the root
+            // data from the server and validate it against the hash(es) in the repository
+            // configuration.
+            $rootFile = $repoPath . '/root.json';
+            if (!file_exists($rootFile)) {
+                $accept = function (StreamInterface $stream) use ($rootFile, $repoConfig) {
+                    foreach ($repoConfig['tuf']['root'] as $algo => $hash) {
+                        $streamHash = hash($algo, $stream->getContents());
+
+                        if ($hash !== $streamHash) {
+                            throw new RepositorySecurityException("TUF root data from server did not match expected $algo hash.");
+                        }
+                        $stream->rewind();
+                    }
+
+                    $bytesWritten = file_put_contents($rootFile, $stream->getContents());
+                    if (!$bytesWritten) {
+                        throw new \RuntimeException("Failed to write TUF root data to $rootFile.");
+                    }
+                };
+
+                $fetcher->fetchMetadata('root.json', Updater::MAXIMUM_DOWNLOAD_BYTES)
+                    ->then($accept)
+                    ->wait();
+            }
+
 
             // The Python tool (which generates the server-side TUF repository) will
             // put all signed files into /targets, so ensure that all downloads are

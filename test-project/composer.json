@@ -7,7 +7,9 @@
             "type": "composer",
             "url": "http://localhost:8080",
             "tuf": {
-                "root": "root.json"
+                "root": {
+                    "sha256": "6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc"
+                }
             }
         },
         {

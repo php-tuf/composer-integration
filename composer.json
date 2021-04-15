@@ -4,11 +4,6 @@
     "type": "composer-plugin",
     "repositories": [
         {
-            "type": "composer",
-            "url": "https://packagist.org",
-            "tuf-url": "https://whatever.com/tuf"
-        },
-        {
             "type": "vcs",
             "url": "https://github.com/php-tuf/php-tuf.git"
         }
@@ -47,8 +42,7 @@
         "make-fixture": [
             "pipenv install",
             "rm -r -f metadata",
-            "pipenv run python generate.py",
-            "cp -f ./metadata/root.json ./test-project"
+            "pipenv run python generate.py"
         ],
         "post-install-cmd": "@post-update-cmd",
         "post-update-cmd": [
