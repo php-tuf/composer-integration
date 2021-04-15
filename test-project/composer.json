@@ -21,10 +21,10 @@
     ],
     "minimum-stability": "dev",
     "config": {
-        "platform": {
-            "php": "7.2.5"
-        },
         "secure-http": false
+    },
+    "conflict": {
+        "drupal/core": "^8"
     },
     "prefer-stable": true
 }
