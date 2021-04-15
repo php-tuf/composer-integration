@@ -6,6 +6,7 @@ use Composer\Factory;
 use Composer\IO\NullIO;
 use Composer\Repository\ComposerRepository;
 use PHPUnit\Framework\TestCase;
+use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
 /**
@@ -16,30 +17,15 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 class ApiTest extends TestCase
 {
     /**
-     * The Composer instance under test.
-     *
-     * @var \Composer\Composer
-     */
-    private $composer;
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-        // Instantiate a Composer instance in the example project.
-        $dir = __DIR__ . '/../test-project';
-        $this->composer = (new Factory())
-            ->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
-    }
-
-    /**
      * @covers ::activate
      */
     public function testActivate(): void
     {
-        $manager = $this->composer->getRepositoryManager();
+        $factory = new Factory();
+        $composer = $factory->createComposer(new NullIO(), []);
+        $composer->getPluginManager()->addPlugin(new Plugin());
+
+        $manager = $composer->getRepositoryManager();
 
         // At least one Composer repository should be loaded.
         $repositories = array_filter($manager->getRepositories(), function ($repository) {
