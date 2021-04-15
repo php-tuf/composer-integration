@@ -28,3 +28,5 @@ jobs:
         run: 'php -S localhost:8080 &'
       - name: Install test project dependencies
         run: 'composer -d test-project require php-tuf/composer-integration'
+      - name: Build TUF fixture
+        run: 'composer run make-fixture'
