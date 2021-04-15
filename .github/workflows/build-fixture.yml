@@ -32,5 +32,5 @@ jobs:
       - name: Start PHP server
         run: 'php -S localhost:8080 &'
       - name: Install test project dependencies
-        run: 'composer require php-tuf/composer-integration:dev-composer-actions'
+        run: 'composer require php-tuf/composer-integration:dev-${{ env.GITHUB_HEAD_REF }}'
         working-directory: ./fixtures/test-project
