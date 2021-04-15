@@ -28,11 +28,6 @@
         "composer-plugin-api": "^2.0",
         "php-tuf/php-tuf": "dev-main"
     },
-    "config": {
-        "platform": {
-            "php": "7.2.5"
-        }
-    },
     "conflict": {
         "zaporylie/composer-drupal-optimizations": "*"
     },
@@ -46,7 +41,7 @@
     },
     "require-dev": {
         "composer/composer": "dev-master",
-        "phpunit/phpunit": "^8"
+        "phpunit/phpunit": "^9.5"
     },
     "scripts": {
         "make-fixture": [
