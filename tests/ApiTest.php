@@ -9,10 +9,17 @@ use PHPUnit\Framework\TestCase;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
 /**
+ * Contains unit test coverage of the Composer plugin class.
+ *
  * @coversDefaultClass \Tuf\ComposerIntegration\Plugin
  */
 class ApiTest extends TestCase
 {
+    /**
+     * The Composer instance under test.
+     *
+     * @var \Composer\Composer
+     */
     private $composer;
 
     /**
