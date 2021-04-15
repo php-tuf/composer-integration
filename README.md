@@ -1,4 +1,4 @@
-# PHP-TUF Integration Composer Plugin
+# PHP-TUF Composer Integration Plugin
 
 Experimental Composer plugin created as an exercise to discover any fundamental
 difficulties with marrying Composer to `php-tuf`.
