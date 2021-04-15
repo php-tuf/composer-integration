@@ -23,9 +23,5 @@
     "config": {
         "secure-http": false
     },
-    "prefer-stable": true,
-    "require": {
-        "php-tuf/composer-integration": "dev-wip",
-        "drupal/token": "^1.9"
-    }
+    "prefer-stable": true
 }
