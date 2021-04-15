@@ -43,9 +43,16 @@
         "composer/composer": "dev-master"
     },
     "scripts": {
-        "post-install-cmd": [
-            "cp -f ./vendor/php-tuf/php-tuf/Pipfile ./fixtures",
-            "cp -f ./vendor/php-tuf/php-tuf/Pipfile.lock ./fixtures"
+        "make-fixture": [
+            "pipenv install",
+            "rm -r -f metadata",
+            "pipenv run python generate.py",
+            "cp -f ./metadata/root.json ./test-project"
+        ],
+        "post-install-cmd": "@post-update-cmd",
+        "post-update-cmd": [
+            "cp -f ./vendor/php-tuf/php-tuf/Pipfile* .",
+            "ln -s -f ./targets/packages.json ."
         ]
     }
 }

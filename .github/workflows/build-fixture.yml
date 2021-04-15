@@ -1,9 +1,8 @@
 name: build-fixture
 on:
   - push
-defaults:
-  run:
-    working-directory: ./fixtures
+env:
+  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader"
 jobs:
   fixture:
     name: Generate test fixture
@@ -18,20 +17,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade pipenv
-      - name: Install dependencies with pipenv
-        run: |
-          if [ -f Pipfile.lock ]; then pipenv --three install; fi
-      - name: Generate fixture
-        run: |
-          pipenv run python generate.py
-          cp ./metadata/root.json ./test-project/tuf-root.json
       - name: Install PHP and Composer 2
         uses: shivammathur/setup-php@v2
         with:
           php-version: 7.2
           tools: 'composer:v2'
+      - name: Install dependencies
+        run: 'composer install ${{ env.COMPOSER_FLAGS }}'
+      - name: Build TUF fixture
+        run: 'composer run make-fixture'
       - name: Start PHP server
         run: 'php -S localhost:8080 &'
       - name: Install test project dependencies
-        run: 'composer require php-tuf/composer-integration'
-        working-directory: ./fixtures/test-project
+        run: 'composer require php-tuf/composer-integration -d test-project'
