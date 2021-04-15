@@ -49,16 +49,18 @@ class TufValidatedComposerRepository extends ComposerRepository
             $fs = new Filesystem();
             $fs->ensureDirectoryExists($repoPath);
 
-            $fetcher = GuzzleFileFetcher::createFromUri($url);
+            // For testing purposes, allow the file fetcher to be passed in the repository configuration.
+            $fetcher = $repoConfig['tuf']['_fileFetcher'] ?? GuzzleFileFetcher::createFromUri($url);
             $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
 
             // If we don't yet have up-to-date TUF metadata in place, download the root
             // data from the server and validate it against the hash(es) in the repository
             // configuration.
             $rootFile = $repoPath . '/root.json';
+            $rootHashes = $repoConfig['tuf']['root'];
             if (!file_exists($rootFile)) {
-                $accept = function (StreamInterface $stream) use ($rootFile, $repoConfig) {
-                    foreach ($repoConfig['tuf']['root'] as $algo => $hash) {
+                $verify = function (StreamInterface $stream) use ($rootFile, $rootHashes) {
+                    foreach ($rootHashes as $algo => $hash) {
                         $streamHash = hash($algo, $stream->getContents());
 
                         if ($hash !== $streamHash) {
@@ -74,10 +76,9 @@ class TufValidatedComposerRepository extends ComposerRepository
                 };
 
                 $fetcher->fetchMetadata('root.json', Updater::MAXIMUM_DOWNLOAD_BYTES)
-                    ->then($accept)
+                    ->then($verify)
                     ->wait();
             }
-
 
             // The Python tool (which generates the server-side TUF repository) will
             // put all signed files into /targets, so ensure that all downloads are
