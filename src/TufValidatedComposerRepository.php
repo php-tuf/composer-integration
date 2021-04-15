@@ -56,11 +56,11 @@ class TufValidatedComposerRepository extends ComposerRepository
             // If we don't yet have up-to-date TUF metadata in place, download the root
             // data from the server and validate it against the hash(es) in the repository
             // configuration.
-            $rootFile = $repoPath . '/root.json';
-            $rootHashes = $repoConfig['tuf']['root'];
+            $rootFile = $repoPath . DIRECTORY_SEPARATOR . 'root.json';
+            $rootInfo = $repoConfig['tuf']['root'];
             if (!file_exists($rootFile)) {
-                $verify = function (StreamInterface $stream) use ($rootFile, $rootHashes) {
-                    foreach ($rootHashes as $algo => $hash) {
+                $verify = function (StreamInterface $stream) use ($rootFile, $rootInfo) {
+                    foreach ($rootInfo['hashes'] as $algo => $hash) {
                         $streamHash = hash($algo, $stream->getContents());
 
                         if ($hash !== $streamHash) {
@@ -75,7 +75,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                     }
                 };
 
-                $fetcher->fetchMetadata('root.json', Updater::MAXIMUM_DOWNLOAD_BYTES)
+                $fetcher->fetchMetadata('root.json', $rootInfo['length'])
                     ->then($verify)
                     ->wait();
             }

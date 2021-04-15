@@ -102,13 +102,15 @@ class ApiTest extends TestCase
      */
     public function testFetchRootData($data, \Throwable $expectedException = null): void
     {
-        $rootHash = hash_file('sha256', __DIR__ . '/../metadata/root.json');
+        $rootFile = __DIR__ . '/../metadata/root.json';
+        $rootHash = hash_file('sha256', $rootFile);
+        $rootSize = filesize($rootFile);
 
         $stream = Utils::streamFor($data);
         $promise = new FulfilledPromise($stream);
 
         $fetcher = $this->prophesize('\Tuf\Client\RepoFileFetcherInterface');
-        $fetcher->fetchMetadata('root.json', Updater::MAXIMUM_DOWNLOAD_BYTES)
+        $fetcher->fetchMetadata('root.json', $rootSize)
             ->willReturn($promise)
             ->shouldBeCalled();
 
@@ -122,7 +124,10 @@ class ApiTest extends TestCase
             'url' => 'https://example.org',
             'tuf' => [
                 'root' => [
-                    'sha256' => $rootHash,
+                    'hashes' => [
+                        'sha256' => $rootHash,
+                    ],
+                    'length' => $rootSize,
                 ],
                 '_fileFetcher' => $fetcher->reveal(),
             ],
