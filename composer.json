@@ -40,7 +40,8 @@
         "class": "Tuf\\ComposerIntegration\\Plugin"
     },
     "require-dev": {
-        "composer/composer": "dev-master"
+        "composer/composer": "dev-master",
+        "phpunit/phpunit": "^9.5"
     },
     "scripts": {
         "make-fixture": [
@@ -53,6 +54,7 @@
         "post-update-cmd": [
             "cp -f ./vendor/php-tuf/php-tuf/Pipfile* .",
             "ln -s -f ./targets/packages.json ."
-        ]
+        ],
+        "test": "phpunit ./tests"
     }
 }
