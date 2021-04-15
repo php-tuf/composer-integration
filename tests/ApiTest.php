@@ -9,6 +9,7 @@ use Composer\Repository\RepositorySecurityException;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
@@ -20,6 +21,8 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ApiTest extends TestCase
 {
+    use ProphecyTrait;
+
     /**
      * The Composer instance under test.
      *
