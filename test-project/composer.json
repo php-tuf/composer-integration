@@ -24,7 +24,7 @@
         "secure-http": false
     },
     "conflict": {
-        "drupal/core": "^8"
+        "drupal/core": "^9"
     },
     "prefer-stable": true
 }
