@@ -24,9 +24,9 @@ jobs:
           tools: 'composer:v2'
       - name: Install dependencies
         run: 'composer install ${{ env.COMPOSER_FLAGS }}'
+      - name: Build TUF fixture
+        run: 'composer run make-fixture'
       - name: Start PHP server
         run: 'php -S localhost:8080 &'
       - name: Install test project dependencies
         run: 'composer require php-tuf/composer-integration -d test-project'
-      - name: Build TUF fixture
-        run: 'composer run make-fixture'
