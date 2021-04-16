@@ -54,8 +54,9 @@ class TufValidatedComposerRepository extends ComposerRepository
             $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
 
             // If we don't yet have up-to-date TUF metadata in place, download the root
-            // data from the server and validate it against the hash(es) in the repository
-            // configuration.
+            // data from the server and validate it against the hash(es) and length from
+            // the repository configuration. Normally that information would be in the
+            // active composer.json.
             $rootFilePath = $repoPath . DIRECTORY_SEPARATOR . 'root.json';
             if (!file_exists($rootFilePath)) {
                 $rootHashes = $repoConfig['tuf']['root']['hashes'];
