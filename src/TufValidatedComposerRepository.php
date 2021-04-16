@@ -61,7 +61,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $rootHashes = $repoConfig['tuf']['root']['hashes'];
                 $rootLength = $repoConfig['tuf']['root']['length'];
 
-                $fetcher->fetchMetadata('root.json', $rootHashes['length'])
+                $fetcher->fetchMetadata('root.json', $rootLength)
                     ->then(function (StreamInterface $stream) use ($rootFilePath, $rootHashes, $rootLength) {
                         $rootMetadata = $stream->getContents();
 
