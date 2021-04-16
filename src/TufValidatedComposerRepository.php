@@ -56,27 +56,28 @@ class TufValidatedComposerRepository extends ComposerRepository
             // If we don't yet have up-to-date TUF metadata in place, download the root
             // data from the server and validate it against the hash(es) in the repository
             // configuration.
-            $rootFile = $repoPath . DIRECTORY_SEPARATOR . 'root.json';
-            if (!file_exists($rootFile)) {
-                $rootInfo = $repoConfig['tuf']['root'];
+            $rootFilePath = $repoPath . DIRECTORY_SEPARATOR . 'root.json';
+            if (!file_exists($rootFilePath)) {
+                $rootHashes = $repoConfig['tuf']['root']['hashes'];
+                $rootLength = $repoConfig['tuf']['root']['length'];
 
-                $fetcher->fetchMetadata('root.json', $rootInfo['length'])
-                    ->then(function (StreamInterface $stream) use ($rootFile, $rootInfo) {
-                        $rootData = $stream->getContents();
+                $fetcher->fetchMetadata('root.json', $rootHashes['length'])
+                    ->then(function (StreamInterface $stream) use ($rootFilePath, $rootHashes, $rootLength) {
+                        $rootMetadata = $stream->getContents();
 
-                        // Ensure the data matches all known hashes.
-                        foreach ($rootInfo['hashes'] as $algo => $hash) {
-                            $streamHash = hash($algo, $rootData);
+                        // Ensure the metadata matches all known hashes.
+                        foreach ($rootHashes as $algo => $trustedHash) {
+                            $streamHash = hash($algo, $rootMetadata);
 
-                            if ($hash !== $streamHash) {
+                            if ($trustedHash !== $streamHash) {
                                 throw new RepositorySecurityException("TUF root data from server did not match expected $algo hash.");
                             }
                         }
 
-                        // Ensure that the data is written to disk in its entirety.
-                        $bytesWritten = file_put_contents($rootFile, $rootData);
-                        if ($bytesWritten !== $rootInfo['length']) {
-                            throw new \RuntimeException("Failed to write TUF root data to $rootFile.");
+                        // Ensure that the metadata is written to disk in its entirety.
+                        $bytesWritten = file_put_contents($rootFilePath, $rootMetadata);
+                        if ($bytesWritten !== $rootLength) {
+                            throw new \RuntimeException("Failed to write TUF root data to $rootFilePath.");
                         }
                     })
                     ->wait();
