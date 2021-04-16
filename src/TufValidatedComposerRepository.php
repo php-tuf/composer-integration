@@ -62,18 +62,19 @@ class TufValidatedComposerRepository extends ComposerRepository
 
                 $fetcher->fetchMetadata('root.json', $rootInfo['length'])
                     ->then(function (StreamInterface $stream) use ($rootFile, $rootInfo) {
-                        // Ensure the stream matches all known hashes for the root metadata.
+                        $rootData = $stream->getContents();
+
+                        // Ensure the data matches all known hashes.
                         foreach ($rootInfo['hashes'] as $algo => $hash) {
-                            $streamHash = hash($algo, $stream->getContents());
+                            $streamHash = hash($algo, $rootData);
 
                             if ($hash !== $streamHash) {
                                 throw new RepositorySecurityException("TUF root data from server did not match expected $algo hash.");
                             }
-                            $stream->rewind();
                         }
 
-                        // Ensure that the root metadata is written to disk in its entirety.
-                        $bytesWritten = file_put_contents($rootFile, $stream->getContents());
+                        // Ensure that the data is written to disk in its entirety.
+                        $bytesWritten = file_put_contents($rootFile, $rootData);
                         if ($bytesWritten !== $rootInfo['length']) {
                             throw new \RuntimeException("Failed to write TUF root data to $rootFile.");
                         }
