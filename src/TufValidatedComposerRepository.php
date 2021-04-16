@@ -57,26 +57,27 @@ class TufValidatedComposerRepository extends ComposerRepository
             // data from the server and validate it against the hash(es) in the repository
             // configuration.
             $rootFile = $repoPath . DIRECTORY_SEPARATOR . 'root.json';
-            $rootInfo = $repoConfig['tuf']['root'];
             if (!file_exists($rootFile)) {
-                $verify = function (StreamInterface $stream) use ($rootFile, $rootInfo) {
-                    foreach ($rootInfo['hashes'] as $algo => $hash) {
-                        $streamHash = hash($algo, $stream->getContents());
-
-                        if ($hash !== $streamHash) {
-                            throw new RepositorySecurityException("TUF root data from server did not match expected $algo hash.");
-                        }
-                        $stream->rewind();
-                    }
-
-                    $bytesWritten = file_put_contents($rootFile, $stream->getContents());
-                    if (!$bytesWritten) {
-                        throw new \RuntimeException("Failed to write TUF root data to $rootFile.");
-                    }
-                };
+                $rootInfo = $repoConfig['tuf']['root'];
 
                 $fetcher->fetchMetadata('root.json', $rootInfo['length'])
-                    ->then($verify)
+                    ->then(function (StreamInterface $stream) use ($rootFile, $rootInfo) {
+                        // Ensure the stream matches all known hashes for the root metadata.
+                        foreach ($rootInfo['hashes'] as $algo => $hash) {
+                            $streamHash = hash($algo, $stream->getContents());
+
+                            if ($hash !== $streamHash) {
+                                throw new RepositorySecurityException("TUF root data from server did not match expected $algo hash.");
+                            }
+                            $stream->rewind();
+                        }
+
+                        // Ensure that the root metadata is written to disk in its entirety.
+                        $bytesWritten = file_put_contents($rootFile, $stream->getContents());
+                        if ($bytesWritten !== $rootInfo['length']) {
+                            throw new \RuntimeException("Failed to write TUF root data to $rootFile.");
+                        }
+                    })
                     ->wait();
             }
 
