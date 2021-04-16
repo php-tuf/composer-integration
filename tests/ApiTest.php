@@ -10,7 +10,6 @@ use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
-use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
@@ -47,7 +46,7 @@ class ApiTest extends TestCase
 
         // Create a new Composer instance, not associated with any project.
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), []);
+        $this->composer = $factory->createComposer(new NullIO(), [], false, __DIR__);
 
         // Activate the plugin.
         $this->composer->getPluginManager()->addPlugin($this->plugin);
