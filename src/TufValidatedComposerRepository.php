@@ -7,6 +7,7 @@ use Composer\Downloader\FilesystemException;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
+use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
@@ -14,7 +15,6 @@ use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
-use Tuf\Client\Updater;
 
 /**
  * Defines a Composer repository that is protected by TUF.
@@ -88,7 +88,42 @@ class TufValidatedComposerRepository extends ComposerRepository
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
+        if ($this->updater) {
+            $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
+        }
         $package->setTransportOptions($options);
+    }
+
+    /**
+     * Extracts a TUF target path from a full URL.
+     *
+     * @param string $url
+     *   A URL.
+     *
+     * @return string
+     *   A TUF target path derived from the URL.
+     */
+    private function getTargetFromUrl(string $url): string
+    {
+        $config = $this->getRepoConfig();
+        $target = str_replace($config['url'], null, $url);
+        return ltrim($target, '/');
+    }
+
+    /**
+     * Reacts before metadata is downloaded.
+     *
+     * @param PreFileDownloadEvent $event
+     *   The event object.
+     */
+    public function prepareMetadata(PreFileDownloadEvent $event): void
+    {
+        if ($this->updater) {
+            $target = $this->getTargetFromUrl($event->getProcessedUrl());
+            $options = $event->getTransportOptions();
+            $options['max_file_size'] = $this->updater->getLength($target);
+            $event->setTransportOptions($options);
+        }
     }
 
     /**
@@ -102,9 +137,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     public function validateMetadata(string $url, Response $response): void
     {
         if ($this->updater) {
-            $config = $this->getRepoConfig();
-            $target = str_replace($config['url'], null, $url);
-            $target = ltrim($target, '/');
+            $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
         }
     }
