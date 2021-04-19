@@ -15,6 +15,7 @@ use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
+use Tuf\Exception\NotFoundException;
 
 /**
  * Defines a Composer repository that is protected by TUF.
@@ -121,7 +122,11 @@ class TufValidatedComposerRepository extends ComposerRepository
         if ($this->updater) {
             $target = $this->getTargetFromUrl($event->getProcessedUrl());
             $options = $event->getTransportOptions();
-            $options['max_file_size'] = $this->updater->getLength($target);
+            try {
+                $options['max_file_size'] = $this->updater->getLength($target);
+            } catch (NotFoundException $e) {
+                $options['max_file_size'] = Updater::MAXIMUM_DOWNLOAD_BYTES;
+            }
             $event->setTransportOptions($options);
         }
     }
