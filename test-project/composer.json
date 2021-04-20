@@ -23,5 +23,8 @@
     "config": {
         "secure-http": false
     },
-    "prefer-stable": true
+    "prefer-stable": true,
+    "require": {
+        "drupal/token": "^1.9"
+    }
 }
