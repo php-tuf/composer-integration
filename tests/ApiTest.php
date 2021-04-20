@@ -4,6 +4,8 @@ namespace Tuf\ComposerIntegration\Tests;
 
 use Composer\Factory;
 use Composer\IO\NullIO;
+use Composer\Plugin\PluginEvents;
+use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -44,11 +46,8 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
-        // Create a new Composer instance, not associated with any project.
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), [], false, __DIR__);
-
-        // Activate the plugin.
+        $this->composer = $factory->createComposer(new NullIO(), [], false, __DIR__ . '/../test-project');
         $this->composer->getPluginManager()->addPlugin($this->plugin);
     }
 
@@ -58,8 +57,71 @@ class ApiTest extends TestCase
     protected function tearDown(): void
     {
         $this->composer->getPluginManager()->uninstallPlugin($this->plugin);
-        $this->assertDirectoryDoesNotExist(__DIR__ . '/vendor/composer/tuf');
         parent::tearDown();
+    }
+
+    /**
+     * @covers ::preFileDownload
+     */
+    public function testPreFileDownload(): void
+    {
+        $stream = Utils::streamFor('abc');
+        $promise = new FulfilledPromise($stream);
+
+        $fetcher = $this->prophesize('\Tuf\Client\RepoFileFetcherInterface');
+        $fetcher->fetchMetadata('root.json', 3)
+            ->willReturn($promise)
+            ->shouldBeCalled();
+
+        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $updater->getLength('packages.json')
+            ->willReturn(1024)
+            ->shouldBeCalled();
+        $updater->getLength('bogus.json')
+            ->willThrow('\Tuf\Exception\NotFoundException')
+            ->shouldBeCalled();
+
+        $repository = $this->composer->getRepositoryManager()
+            ->createRepository('composer', [
+                'url' => 'https://example.com',
+                'tuf' => [
+                    'root' => [
+                        'hashes' => [],
+                        'length' => 3,
+                    ],
+                    '_fileFetcher' => $fetcher->reveal(),
+                    '_updater' => $updater->reveal(),
+                ],
+            ]);
+
+        // If the target length is known, it should end up in the transport options.
+        $event = new PreFileDownloadEvent(
+            PluginEvents::PRE_FILE_DOWNLOAD,
+            $this->composer->getLoop()->getHttpDownloader(),
+            'https://example.com/targets/packages.json',
+            'metadata',
+            [
+                'repository' => $repository,
+            ]
+        );
+        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $options = $event->getTransportOptions();
+        $this->assertSame(1024, $options['max_file_size']);
+
+        // If the target is unknown, the default maximum length should end up in
+        // the transport options.
+        $event = new PreFileDownloadEvent(
+            PluginEvents::PRE_FILE_DOWNLOAD,
+            $this->composer->getLoop()->getHttpDownloader(),
+            'https://example.com/targets/bogus.json',
+            'metadata',
+            [
+                'repository' => $repository,
+            ]
+        );
+        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $options = $event->getTransportOptions();
+        $this->assertSame(TufValidatedComposerRepository::MAX_404_BYTES, $options['max_file_size']);
     }
 
     /**

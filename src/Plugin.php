@@ -10,6 +10,7 @@ use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PostFileDownloadEvent;
+use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
@@ -30,8 +31,27 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
+            PluginEvents::PRE_FILE_DOWNLOAD => ['preFileDownload', -1000],
             PluginEvents::POST_FILE_DOWNLOAD => ['postFileDownload', -1000],
         ];
+    }
+
+    /**
+     * Reacts before metadata is downloaded.
+     *
+     * If the metadata is associated with a TUF-aware Composer repository,
+     * its maximum length in bytes will be set by TUF.
+     *
+     * @param PreFileDownloadEvent $event
+     *   The event object.
+     */
+    public function preFileDownload(PreFileDownloadEvent $event): void
+    {
+        $context = $event->getContext();
+
+        if ($event->getType() === 'metadata' && $context['repository'] instanceof TufValidatedComposerRepository) {
+            $context['repository']->prepareMetadata($event);
+        }
     }
 
     /**

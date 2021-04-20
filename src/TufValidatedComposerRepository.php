@@ -6,6 +6,7 @@ use Composer\Config;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
+use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
 use Composer\Util\Filesystem;
@@ -15,7 +16,7 @@ use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
-use Tuf\Client\Updater;
+use Tuf\Exception\NotFoundException;
 
 /**
  * Defines a Composer repository that is protected by TUF.
@@ -23,9 +24,18 @@ use Tuf\Client\Updater;
 class TufValidatedComposerRepository extends ComposerRepository
 {
     /**
+     * The maximum allowable length of a 404 response for metadata.
+     *
+     * @see ::prepareMetadata()
+     *
+     * @var int
+     */
+    public const MAX_404_BYTES = 1024;
+
+    /**
      * The TUF updater, if any, for this repository.
      *
-     * @var Updater
+     * @var ComposerCompatibleUpdater
      */
     private $updater;
 
@@ -49,9 +59,10 @@ class TufValidatedComposerRepository extends ComposerRepository
             $fs = new Filesystem();
             $fs->ensureDirectoryExists($repoPath);
 
-            // For testing purposes, allow the file fetcher to be passed in the repository configuration.
+            // For unit testing purposes, allow the updater and/or file fetcher instances
+            // to be passed in the repository configuration.
             $fetcher = $repoConfig['tuf']['_fileFetcher'] ?? GuzzleFileFetcher::createFromUri($url);
-            $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
+            $this->updater = $repoConfig['tuf']['_updater'] ?? new ComposerCompatibleUpdater($fetcher, [], new FileStorage($repoPath));
 
             // If we don't yet have up-to-date TUF metadata in place, download the root
             // data from the server and validate it against the hash(es) and length from
@@ -111,7 +122,69 @@ class TufValidatedComposerRepository extends ComposerRepository
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
+        if ($this->isTufEnabled()) {
+            $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
+        }
         $package->setTransportOptions($options);
+    }
+
+    /**
+     * Indicates if TUF is enabled for this repository.
+     *
+     * @return bool
+     *   Whether PHP-TUF is enabled for this repository.
+     */
+    private function isTufEnabled(): bool
+    {
+        return $this->updater instanceof ComposerCompatibleUpdater;
+    }
+
+    /**
+     * Extracts a TUF target path from a full URL.
+     *
+     * @param string $url
+     *   A URL.
+     *
+     * @return string
+     *   A TUF target path derived from the URL.
+     */
+    private function getTargetFromUrl(string $url): string
+    {
+        $config = $this->getRepoConfig();
+        $target = str_replace($config['url'], null, $url);
+        return ltrim($target, '/');
+    }
+
+    /**
+     * Reacts before metadata is downloaded.
+     *
+     * @param PreFileDownloadEvent $event
+     *   The event object.
+     */
+    public function prepareMetadata(PreFileDownloadEvent $event): void
+    {
+        if ($this->isTufEnabled()) {
+            $target = $this->getTargetFromUrl($event->getProcessedUrl());
+            $options = $event->getTransportOptions();
+            try {
+                $options['max_file_size'] = $this->updater->getLength($target);
+            } catch (NotFoundException $e) {
+                // As it compiles information on the available packages, ComposerRepository
+                // expects to receive occasional 404 responses from the server, which
+                // it treats as a totally normal indication that the repository doesn't have
+                // a particular package, or version of a package. Those requests probably
+                // don't have a corresponding TUF target, which means Updater::getLength()
+                // will throw exceptions. Since we need to allow those requests to happen,
+                // a reasonable compromise is to constrain the response size for unknown
+                // metadata targets to a small constant value (we don't expect 404 responses
+                // to be particularly verbose). This is NOT something we want to do for
+                // actual package requests, since it's always an error condition if a package
+                // URL returns a 404. That's why we don't do a similar try-catch in
+                // ::configurePackageTransportOptions().
+                $options['max_file_size'] = static::MAX_404_BYTES;
+            }
+            $event->setTransportOptions($options);
+        }
     }
 
     /**
@@ -124,10 +197,8 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function validateMetadata(string $url, Response $response): void
     {
-        if ($this->updater) {
-            $config = $this->getRepoConfig();
-            $target = str_replace($config['url'], null, $url);
-            $target = ltrim($target, '/');
+        if ($this->isTufEnabled()) {
+            $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
         }
     }
@@ -142,7 +213,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function validatePackage(PackageInterface $package, string $filename): void
     {
-        if ($this->updater) {
+        if ($this->isTufEnabled()) {
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
