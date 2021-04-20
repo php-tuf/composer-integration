@@ -41,7 +41,8 @@
     },
     "require-dev": {
         "composer/composer": "dev-master",
-        "phpunit/phpunit": "^9.5"
+        "phpunit/phpunit": "^9.5",
+        "phpspec/prophecy-phpunit": "^2.0"
     },
     "scripts": {
         "make-fixture": [
