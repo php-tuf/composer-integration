@@ -8,8 +8,10 @@ use Tuf\Metadata\TargetsMetadata;
 
 /**
  * Defines an updater that exposes additional information about TUF targets.
+ *
+ * @internal
  */
-final class Updater extends BaseUpdater
+class Updater extends BaseUpdater
 {
     /**
      * {@inheritDoc}
