@@ -163,7 +163,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 // actual package requests, since it's always an error condition if a package
                 // URL returns a 404. That's why we don't do a similar try-catch in
                 // ::configurePackageTransportOptions().
-                $options['max_file_size'] = 1024;
+                $options['max_file_size'] = static::MAX_404_BYTES;
             }
             $event->setTransportOptions($options);
         }
