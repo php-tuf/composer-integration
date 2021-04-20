@@ -95,10 +95,21 @@ class TufValidatedComposerRepository extends ComposerRepository
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
-        if ($this->updater) {
+        if ($this->isTufEnabled()) {
             $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
         }
         $package->setTransportOptions($options);
+    }
+
+    /**
+     * Indicates if TUF is enabled for this repository.
+     *
+     * @return bool
+     *   Whether PHP-TUF is enabled for this repository.
+     */
+    private function isTufEnabled(): bool
+    {
+        return $this->updater instanceof Updater;
     }
 
     /**
@@ -125,7 +136,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function prepareMetadata(PreFileDownloadEvent $event): void
     {
-        if ($this->updater) {
+        if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($event->getProcessedUrl());
             $options = $event->getTransportOptions();
             try {
@@ -158,7 +169,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function validateMetadata(string $url, Response $response): void
     {
-        if ($this->updater) {
+        if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
         }
@@ -174,7 +185,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function validatePackage(PackageInterface $package, string $filename): void
     {
-        if ($this->updater) {
+        if ($this->isTufEnabled()) {
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
