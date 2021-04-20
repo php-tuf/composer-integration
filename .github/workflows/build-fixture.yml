@@ -28,7 +28,5 @@ jobs:
         run: 'composer run make-fixture'
       - name: Start PHP server
         run: 'php -S localhost:8080 &'
-      - name: Install test project dependencies
-        run: 'composer require php-tuf/composer-integration -d test-project'
-      - name: 'Run tests'
+      - name: Run tests
         run: 'composer test'

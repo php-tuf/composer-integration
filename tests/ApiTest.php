@@ -8,6 +8,7 @@ use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use PHPUnit\Framework\TestCase;
+use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
@@ -18,6 +19,8 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ApiTest extends TestCase
 {
+    use ProphecyTrait;
+
     /**
      * The Composer instance under test.
      *
