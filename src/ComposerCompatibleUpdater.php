@@ -28,6 +28,9 @@ class ComposerCompatibleUpdater extends Updater
      */
     public function verify(string $target, StreamInterface $data): void
     {
+        // This method is overridden in order to make it public, so that the
+        // plugin can validate the length and hashes of a downloaded TUF target
+        // after Composer has used its own mechanisms to retrieve it.
         parent::verify($target, $data);
     }
 
