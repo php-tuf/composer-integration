@@ -47,7 +47,7 @@ class ApiTest extends TestCase
         $this->plugin = new Plugin();
 
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), [], false, __DIR__ . '/../test-project');
+        $this->composer = $factory->createComposer(new NullIO(), [], false, __DIR__);
         $this->composer->getPluginManager()->addPlugin($this->plugin);
     }
 
