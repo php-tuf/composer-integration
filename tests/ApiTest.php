@@ -52,6 +52,43 @@ class ApiTest extends TestCase
     }
 
     /**
+     * Creates a TUF-protected Composer repository.
+     *
+     * @param array $config
+     *   (optional) The repository configuration.
+     * @param mixed $bootstrap
+     *   (optional) The data which should be used to bootstrap trust. Must be streamable
+     *   (i.e., a string or a file resource). Defaults to ../metadata/root.json.
+     * @param string $sha256
+     *   (optional) The SHA-256 hash of the bootstrap data. Defaults to the hash of
+     *   ../metadata/root.json.
+     *
+     * @return TufValidatedComposerRepository
+     *   The repository instance.
+     */
+    private function createRepository(array $config = [], $bootstrap = null, string $sha256 = '6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc'): TufValidatedComposerRepository
+    {
+        if (empty($bootstrap)) {
+            $bootstrap = fopen(__DIR__ . '/../metadata/root.json', 'r');
+            $this->assertIsResource($bootstrap);
+        }
+        $stream = Utils::streamFor($bootstrap);
+        $promise = new FulfilledPromise($stream);
+
+        $fetcher = $this->prophesize('\Tuf\Client\RepoFileFetcherInterface');
+        $fetcher->fetchMetadata('root.json', $stream->getSize())
+            ->willReturn($promise)
+            ->shouldBeCalled();
+
+        $config['tuf']['root']['hashes']['sha256'] = $sha256;
+        $config['tuf']['root']['length'] = $stream->getSize();
+        $config['tuf']['_fileFetcher'] = $fetcher->reveal();
+
+        return $this->composer->getRepositoryManager()
+            ->createRepository('composer', $config);
+    }
+
+    /**
      * {@inheritDoc}
      */
     protected function tearDown(): void
@@ -65,14 +102,6 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(): void
     {
-        $stream = Utils::streamFor('abc');
-        $promise = new FulfilledPromise($stream);
-
-        $fetcher = $this->prophesize('\Tuf\Client\RepoFileFetcherInterface');
-        $fetcher->fetchMetadata('root.json', 3)
-            ->willReturn($promise)
-            ->shouldBeCalled();
-
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $updater->getLength('packages.json')
             ->willReturn(1024)
@@ -81,18 +110,12 @@ class ApiTest extends TestCase
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
 
-        $repository = $this->composer->getRepositoryManager()
-            ->createRepository('composer', [
-                'url' => 'https://example.com',
-                'tuf' => [
-                    'root' => [
-                        'hashes' => [],
-                        'length' => 3,
-                    ],
-                    '_fileFetcher' => $fetcher->reveal(),
-                    '_updater' => $updater->reveal(),
-                ],
-            ]);
+        $repository = $this->createRepository([
+            'url' => 'https://example.com',
+            'tuf' => [
+                '_updater' => $updater->reveal(),
+            ],
+        ]);
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
@@ -163,40 +186,18 @@ class ApiTest extends TestCase
      */
     public function testFetchRootData($data, \Throwable $expectedException = null): void
     {
-        $rootFile = __DIR__ . '/../metadata/root.json';
-        $rootHash = hash_file('sha256', $rootFile);
-        $rootSize = filesize($rootFile);
-
-        $stream = Utils::streamFor($data);
-        $promise = new FulfilledPromise($stream);
-
-        $fetcher = $this->prophesize('\Tuf\Client\RepoFileFetcherInterface');
-        $fetcher->fetchMetadata('root.json', $rootSize)
-            ->willReturn($promise)
-            ->shouldBeCalled();
-
         if ($expectedException) {
             $this->expectException(get_class($expectedException));
             $this->expectExceptionMessage($expectedException->getMessage());
             $this->expectExceptionCode($expectedException->getCode());
         }
-
-        $this->composer->getRepositoryManager()->createRepository('composer', [
+        $this->createRepository([
             'url' => 'https://example.org',
-            'tuf' => [
-                'root' => [
-                    'hashes' => [
-                        'sha256' => $rootHash,
-                    ],
-                    'length' => $rootSize,
-                ],
-                '_fileFetcher' => $fetcher->reveal(),
-            ],
-        ]);
+        ], $data);
 
         $rootFile = __DIR__ . '/vendor/composer/tuf/https---example.org/root.json';
         $this->assertFileExists($rootFile);
-        $this->assertSame($rootHash, hash_file('sha256', $rootFile));
+        $this->assertSame('6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc', hash_file('sha256', $rootFile));
     }
 
     /**
@@ -209,7 +210,7 @@ class ApiTest extends TestCase
     {
         return [
             'valid data' => [
-                fopen(__DIR__ . '/../metadata/root.json', 'r'),
+                null,
             ],
             'invalid data' => [
                 "Shall I compare thee to a summer's day?",
