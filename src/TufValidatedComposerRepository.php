@@ -131,6 +131,17 @@ class TufValidatedComposerRepository extends ComposerRepository
             try {
                 $options['max_file_size'] = $this->updater->getLength($target);
             } catch (NotFoundException $e) {
+                // As it compiles information on the available packages, ComposerRepository
+                // expects to receive occasional 404 responses from the server, which
+                // it treats as a totally normal indication that the repository doesn't have
+                // a particular package, or version of a package. Those requests probably
+                // don't have a corresponding TUF target, which means Updater::getLength()
+                // will throw exceptions. Since we need to allow those requests to happen,
+                // a reasonable compromise is to constrain the response size for unknown
+                // metadata targets to a constant value. This is NOT something we want to
+                // do for actual package requests, since it's always an error condition if
+                // a package URL returns a 404. That's why we don't do a similar try-catch
+                // in ::configurePackageTransportOptions().
                 $options['max_file_size'] = Updater::MAXIMUM_DOWNLOAD_BYTES;
             }
             $event->setTransportOptions($options);
