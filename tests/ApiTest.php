@@ -10,7 +10,7 @@ use Composer\Repository\ComposerRepository;
 use PHPUnit\Framework\TestCase;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
-use Tuf\ComposerIntegration\Updater;
+use Tuf\ComposerIntegration\ComposerCompatibleUpdater;
 
 /**
  * Contains unit test coverage of the Composer plugin class.
@@ -60,7 +60,7 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(): void
     {
-        $updater = $this->prophesize('\Tuf\ComposerIntegration\Updater');
+        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $updater->getLength('packages.json')
             ->willReturn(1024)
             ->shouldBeCalled();
@@ -104,7 +104,7 @@ class ApiTest extends TestCase
         );
         $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
-        $this->assertSame(Updater::MAXIMUM_DOWNLOAD_BYTES, $options['max_file_size']);
+        $this->assertSame(ComposerCompatibleUpdater::MAXIMUM_DOWNLOAD_BYTES, $options['max_file_size']);
     }
 
     /**

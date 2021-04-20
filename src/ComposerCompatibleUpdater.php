@@ -3,7 +3,7 @@
 namespace Tuf\ComposerIntegration;
 
 use Psr\Http\Message\StreamInterface;
-use Tuf\Client\Updater as BaseUpdater;
+use Tuf\Client\Updater;
 use Tuf\Metadata\TargetsMetadata;
 
 /**
@@ -22,7 +22,7 @@ use Tuf\Metadata\TargetsMetadata;
  *
  * @internal
  */
-class Updater extends BaseUpdater
+class ComposerCompatibleUpdater extends Updater
 {
     /**
      * {@inheritDoc}

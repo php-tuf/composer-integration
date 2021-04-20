@@ -25,7 +25,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     /**
      * The TUF updater, if any, for this repository.
      *
-     * @var Updater
+     * @var ComposerCompatibleUpdater
      */
     private $updater;
 
@@ -65,7 +65,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $this->updater = $repoConfig['tuf']['_updater'];
             } else {
                 $fetcher = GuzzleFileFetcher::createFromUri($url);
-                $this->updater = new Updater($fetcher, [], new FileStorage($repoPath));
+                $this->updater = new ComposerCompatibleUpdater($fetcher, [], new FileStorage($repoPath));
             }
 
             // The Python tool (which generates the server-side TUF repository) will
@@ -109,7 +109,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     private function isTufEnabled(): bool
     {
-        return $this->updater instanceof Updater;
+        return $this->updater instanceof ComposerCompatibleUpdater;
     }
 
     /**
@@ -153,7 +153,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 // do for actual package requests, since it's always an error condition if
                 // a package URL returns a 404. That's why we don't do a similar try-catch
                 // in ::configurePackageTransportOptions().
-                $options['max_file_size'] = Updater::MAXIMUM_DOWNLOAD_BYTES;
+                $options['max_file_size'] = ComposerCompatibleUpdater::MAXIMUM_DOWNLOAD_BYTES;
             }
             $event->setTransportOptions($options);
         }
