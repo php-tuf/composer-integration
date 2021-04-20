@@ -96,11 +96,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
         if ($this->updater) {
-            try {
-                $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
-            } catch (NotFoundException $e) {
-                $options['max_file_size'] = Updater::MAXIMUM_DOWNLOAD_BYTES;
-            }
+            $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
         }
         $package->setTransportOptions($options);
     }
