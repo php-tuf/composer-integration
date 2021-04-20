@@ -10,7 +10,6 @@ use Composer\Repository\ComposerRepository;
 use PHPUnit\Framework\TestCase;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
-use Tuf\ComposerIntegration\ComposerCompatibleUpdater;
 
 /**
  * Contains unit test coverage of the Composer plugin class.
@@ -104,7 +103,7 @@ class ApiTest extends TestCase
         );
         $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
-        $this->assertSame(ComposerCompatibleUpdater::MAXIMUM_DOWNLOAD_BYTES, $options['max_file_size']);
+        $this->assertSame(TufValidatedComposerRepository::MAX_404_BYTES, $options['max_file_size']);
     }
 
     /**

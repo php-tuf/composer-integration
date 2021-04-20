@@ -23,6 +23,15 @@ use Tuf\Exception\NotFoundException;
 class TufValidatedComposerRepository extends ComposerRepository
 {
     /**
+     * The maximum allowable length of a 404 response for metadata.
+     *
+     * @see ::prepareMetadata()
+     *
+     * @var int
+     */
+    public const MAX_404_BYTES = 1024;
+
+    /**
      * The TUF updater, if any, for this repository.
      *
      * @var ComposerCompatibleUpdater
@@ -149,11 +158,12 @@ class TufValidatedComposerRepository extends ComposerRepository
                 // don't have a corresponding TUF target, which means Updater::getLength()
                 // will throw exceptions. Since we need to allow those requests to happen,
                 // a reasonable compromise is to constrain the response size for unknown
-                // metadata targets to a constant value. This is NOT something we want to
-                // do for actual package requests, since it's always an error condition if
-                // a package URL returns a 404. That's why we don't do a similar try-catch
-                // in ::configurePackageTransportOptions().
-                $options['max_file_size'] = ComposerCompatibleUpdater::MAXIMUM_DOWNLOAD_BYTES;
+                // metadata targets to a small constant value (we don't expect 404 responses
+                // to be particularly verbose). This is NOT something we want to do for
+                // actual package requests, since it's always an error condition if a package
+                // URL returns a 404. That's why we don't do a similar try-catch in
+                // ::configurePackageTransportOptions().
+                $options['max_file_size'] = 1024;
             }
             $event->setTransportOptions($options);
         }
