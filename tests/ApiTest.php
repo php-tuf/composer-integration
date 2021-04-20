@@ -59,14 +59,11 @@ class ApiTest extends TestCase
      * @param mixed $bootstrap
      *   (optional) The data which should be used to bootstrap trust. Must be streamable
      *   (i.e., a string or a file resource). Defaults to ../metadata/root.json.
-     * @param string $sha256
-     *   (optional) The SHA-256 hash of the bootstrap data. Defaults to the hash of
-     *   ../metadata/root.json.
      *
      * @return TufValidatedComposerRepository
      *   The repository instance.
      */
-    private function createRepository(array $config = [], $bootstrap = null, string $sha256 = '6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc'): TufValidatedComposerRepository
+    private function createRepository(array $config = [], $bootstrap = null): TufValidatedComposerRepository
     {
         if (empty($bootstrap)) {
             $bootstrap = fopen(__DIR__ . '/../metadata/root.json', 'r');
@@ -80,7 +77,7 @@ class ApiTest extends TestCase
             ->willReturn($promise)
             ->shouldBeCalled();
 
-        $config['tuf']['root']['hashes']['sha256'] = $sha256;
+        $config['tuf']['root']['hashes']['sha256'] = '6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc';
         $config['tuf']['root']['length'] = $stream->getSize();
         $config['tuf']['_fileFetcher'] = $fetcher->reveal();
 
@@ -174,48 +171,22 @@ class ApiTest extends TestCase
 
     /**
      * Tests fetching and validating root TUF data from the server.
-     *
-     * @param mixed $data
-     *   The root data that will be returned from the server. Must be streamable
-     *   (i.e., a string or file resource).
-     * @param \Throwable|null $expectedException
-     *   (optional) If given, a copy (i.e., same class, message, and error code)
-     *   of the exception that should be thrown.
-     *
-     * @dataProvider providerFetchRootData
      */
-    public function testFetchRootData($data, \Throwable $expectedException = null): void
+    public function testFetchRootData(): void
     {
-        if ($expectedException) {
-            $this->expectException(get_class($expectedException));
-            $this->expectExceptionMessage($expectedException->getMessage());
-            $this->expectExceptionCode($expectedException->getCode());
-        }
-        $this->createRepository([
+        $config = [
             'url' => 'https://example.org',
-        ], $data);
+        ];
+        $this->createRepository($config);
 
         $rootFile = __DIR__ . '/vendor/composer/tuf/https---example.org/root.json';
         $this->assertFileExists($rootFile);
         $this->assertSame('6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc', hash_file('sha256', $rootFile));
-    }
+        $this->assertTrue(unlink($rootFile));
 
-    /**
-     * Data provider for ::testFetchRootData().
-     *
-     * @return array[]
-     *   Sets of arguments to pass to the test method.
-     */
-    public function providerFetchRootData(): array
-    {
-        return [
-            'valid data' => [
-                null,
-            ],
-            'invalid data' => [
-                "Shall I compare thee to a summer's day?",
-                new RepositorySecurityException("TUF root data from server did not match expected sha256 hash."),
-            ],
-        ];
+        $this->expectException('\Composer\Repository\RepositorySecurityException');
+        $this->expectExceptionMessage("TUF root data from server did not match expected sha256 hash.");
+
+        $this->createRepository($config, "Shall I compare thee to a summer's day?");
     }
 }
