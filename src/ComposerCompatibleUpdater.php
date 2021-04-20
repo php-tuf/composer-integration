@@ -16,9 +16,8 @@ use Tuf\Metadata\TargetsMetadata;
  * Composer to download its packages and metadata how it wants, while still allowing us to
  * verify and protect those downloads using PHP-TUF.
  *
- * The existence of this class is a deviation from the TUF specification. It should not be
- * used or extended at any time, in any way, by external code. No promise of backwards
- * compatibility is made. You have been warned!
+ * This class should not be used or extended at any time, in any way, by external code. No
+ * promise of backwards compatibility is made. You have been warned!
  *
  * @internal
  */
