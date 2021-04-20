@@ -8,6 +8,7 @@ use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\RepositorySecurityException;
+use Composer\Util\Filesystem;
 use GuzzleHttp\Promise\FulfilledPromise;
 use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
@@ -52,6 +53,17 @@ class ApiTest extends TestCase
     }
 
     /**
+     * {@inheritDoc}
+     */
+    protected function tearDown(): void
+    {
+        $this->composer->getPluginManager()->uninstallPlugin($this->plugin);
+        (new Filesystem())
+            ->removeDirectory(__DIR__ . '/vendor');
+        parent::tearDown();
+    }
+
+    /**
      * Creates a TUF-protected Composer repository.
      *
      * @param array $config
@@ -83,15 +95,6 @@ class ApiTest extends TestCase
 
         return $this->composer->getRepositoryManager()
             ->createRepository('composer', $config);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function tearDown(): void
-    {
-        $this->composer->getPluginManager()->uninstallPlugin($this->plugin);
-        parent::tearDown();
     }
 
     /**
@@ -174,19 +177,25 @@ class ApiTest extends TestCase
      */
     public function testFetchRootData(): void
     {
-        $config = [
+        $this->createRepository([
             'url' => 'https://example.org',
-        ];
-        $this->createRepository($config);
+        ]);
 
         $rootFile = __DIR__ . '/vendor/composer/tuf/https---example.org/root.json';
         $this->assertFileExists($rootFile);
         $this->assertSame('6cf95b77cedc832c980b81560704bd2fb9ee32ec4c1a73395a029b76715705cc', hash_file('sha256', $rootFile));
-        $this->assertTrue(unlink($rootFile));
+    }
 
+    /**
+     * Tests fetching invalid root TUF data from the server.
+     */
+    public function testFetchInvalidRootData(): void
+    {
         $this->expectException('\Composer\Repository\RepositorySecurityException');
         $this->expectExceptionMessage("TUF root data from server did not match expected sha256 hash.");
 
-        $this->createRepository($config, "Shall I compare thee to a summer's day?");
+        $this->createRepository([
+            'url' => 'https://example.org',
+        ], "Shall I compare thee to a summer's day?");
     }
 }
