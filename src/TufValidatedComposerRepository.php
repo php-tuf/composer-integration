@@ -39,13 +39,6 @@ class TufValidatedComposerRepository extends ComposerRepository
     private $updater;
 
     /**
-     * A TUF updater to use in unit testing.
-     *
-     * @var ComposerCompatibleUpdater
-     */
-    public static $_updater;
-
-    /**
      * {@inheritDoc}
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
@@ -77,12 +70,11 @@ class TufValidatedComposerRepository extends ComposerRepository
 
             // For unit testing purposes, allow the updater instance to be provided
             // by calling code before this object is created.
-            $this->updater = static::$_updater ?: new ComposerCompatibleUpdater(
+            $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
                 [],
                 new FileStorage($repoPath)
             );
-            static::$_updater = null;
 
             // The Python tool (which generates the server-side TUF repository) will
             // put all signed files into /targets, so ensure that all downloads are

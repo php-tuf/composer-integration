@@ -70,7 +70,6 @@ class ApiTest extends TestCase
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
 
-        TufValidatedComposerRepository::$_updater = $updater->reveal();
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
                 'url' => 'https://example.com',
@@ -78,6 +77,10 @@ class ApiTest extends TestCase
                     'root' => __DIR__ . '/../test-project/root.json',
                 ],
             ]);
+        $reflector = new \ReflectionObject($repository);
+        $property = $reflector->getProperty('updater');
+        $property->setAccessible(true);
+        $property->setValue($repository, $updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
