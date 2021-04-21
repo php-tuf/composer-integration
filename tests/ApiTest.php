@@ -63,6 +63,8 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(): void
     {
+        $url = 'http://localhost:8080';
+
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $updater->getLength('packages.json')
             ->willReturn(1024)
@@ -73,7 +75,7 @@ class ApiTest extends TestCase
 
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
-                'url' => 'http://localhost:8080',
+                'url' => $url,
                 'tuf' => [
                     '_updater' => $updater->reveal(),
                 ],
@@ -83,7 +85,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'http://localhost:8080/targets/packages.json',
+            "$url/targets/packages.json",
             'metadata',
             [
                 'repository' => $repository,
@@ -98,7 +100,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'http://localhost:8080/targets/bogus.json',
+            "$url/targets/bogus.json",
             'metadata',
             [
                 'repository' => $repository,
