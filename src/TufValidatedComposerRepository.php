@@ -3,7 +3,6 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Config;
-use Composer\Downloader\FilesystemException;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
