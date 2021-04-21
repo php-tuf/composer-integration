@@ -70,12 +70,12 @@ class ApiTest extends TestCase
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
 
+        TufValidatedComposerRepository::$_updater = $updater->reveal();
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
                 'url' => 'https://example.com',
                 'tuf' => [
                     'root' => __DIR__ . '/../test-project/root.json',
-                    '_updater' => $updater->reveal(),
                 ],
             ]);
 
