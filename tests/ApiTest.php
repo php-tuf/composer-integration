@@ -43,8 +43,9 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
+        $dir = __DIR__ . '/../test-project';
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), []);
+        $this->composer = $factory->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
         $this->composer->getPluginManager()->addPlugin($this->plugin);
     }
 
@@ -72,9 +73,8 @@ class ApiTest extends TestCase
 
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
-                'url' => 'https://example.com',
+                'url' => 'http://localhost:8080',
                 'tuf' => [
-                    'root' => __DIR__ . '/../test-project/root.json',
                     '_updater' => $updater->reveal(),
                 ],
             ]);
@@ -83,7 +83,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'https://example.com/targets/packages.json',
+            'http://localhost:8080/targets/packages.json',
             'metadata',
             [
                 'repository' => $repository,
@@ -98,7 +98,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'https://example.com/targets/bogus.json',
+            'http://localhost:8080/targets/bogus.json',
             'metadata',
             [
                 'repository' => $repository,
