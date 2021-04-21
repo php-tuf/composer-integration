@@ -45,32 +45,12 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
-            $repoKey = preg_replace('/[^[:alnum:]\.]+/', '.', $url);
+            $repoPath = $this->initializeStorage($url, $config);
 
-            // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-            $repoPath = Plugin::getStoragePath($config) . DIRECTORY_SEPARATOR . $repoKey;
-
-            $fs = new Filesystem();
-            $fs->ensureDirectoryExists($repoPath);
-
-            // We expect the repository to have a root metadata file in a known
-            // good state. Copy that file to our persistent storage location if
-            // it doesn't already exist.
-            $rootFile = $repoPath . '/root.json';
-            if (!file_exists($rootFile)) {
-                $sourcePath = implode(DIRECTORY_SEPARATOR, [
-                    dirname($config->getConfigSource()->getName()),
-                    'tuf',
-                    $repoKey,
-                ]);
-                $fs->copy("$sourcePath.json", $rootFile);
-            }
-
-            // For unit testing purposes, allow the updater instance to be provided
-            // by calling code before this object is created.
             $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
                 [],
+                // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 new FileStorage($repoPath)
             );
 
@@ -83,6 +63,47 @@ class TufValidatedComposerRepository extends ComposerRepository
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
         }
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
+    }
+
+    /**
+     * Initializes the persistent storage for this repository's TUF data.
+     *
+     * @param string $url
+     *   The repository URL.
+     * @param Config $config
+     *   The Composer configuration.
+     *
+     * @return string
+     *   The path of the persistent storage for this repository's TUF data.
+     */
+    private function initializeStorage(string $url, Config $config): string
+    {
+        // Use the repository URL to derive an identifier. We expect the initial
+        // root metadata to be named as IDENTIFIER.json, and this identifier will
+        // also be the name of the durable storage directory.
+        $repoKey = preg_replace('/[^[:alnum:]\.]+/', '.', $url);
+
+        $storagePath = Plugin::getStoragePath($config) . DIRECTORY_SEPARATOR . $repoKey;
+        $fs = new Filesystem();
+        $fs->ensureDirectoryExists($storagePath);
+
+        // If the durable storage directory doesn't yet have root metadata, copy
+        // the initial root metadata into it.
+        $rootMetadataPath = "$storagePath/root.json";
+        if (!file_exists($rootMetadataPath)) {
+            //  We expect the initial root metadata to be in a directory
+            // called `tuf`, adjacent to the active composer.json.
+            $initialRootMetadataPath = implode(DIRECTORY_SEPARATOR, [
+                // This is the directory which contains the active composer.json.
+                dirname($config->getConfigSource()->getName()),
+                'tuf',
+                $repoKey,
+            ]);
+            // If the initial root metadata file doesn't exist, this will throw
+            // an exception.
+            $fs->copy("$initialRootMetadataPath.json", $rootMetadataPath);
+        }
+        return $storagePath;
     }
 
     /**
