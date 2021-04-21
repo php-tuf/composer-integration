@@ -18,6 +18,13 @@ The plugin examines `composer` type repositories. For any that contain an additi
 during package discovery and download operations, validating that the repository and package are not being tampered
 with.
 
+In accordance with the [TUF specification](https://github.com/theupdateframework/specification/blob/v1.0.9/tuf-spec.md#5-detailed-workflows),
+projects using this plugin must supply a set of trusted keys for each repository they want to protect with TUF. Each
+TUF-protected repository should provide a JSON file named for the repository URL, with non-alphanumeric characters
+replaced by a single period. For example, if the repository URL is `https://repo.example.net:1234/packages`, then the
+key file should be called `https.repo.example.net.1234.packages.json`. All key files must be stored in a directory
+called`tuf`, adjacent to the project's `composer.json` file.
+
 The TUF repository must track the Composer repository, signing new versions of packages as they are released as well as
 the Composer package metadata for them.
 

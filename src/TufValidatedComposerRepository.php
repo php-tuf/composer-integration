@@ -79,22 +79,22 @@ class TufValidatedComposerRepository extends ComposerRepository
     private function initializeStorage(string $url, Config $config): string
     {
         // Use the repository URL to derive an identifier. We expect the initial
-        // root metadata to be named as IDENTIFIER.json, and this identifier will
-        // also be the name of the durable storage directory.
+        // root metadata to be named IDENTIFIER.json. The identifier will also be
+        // used as the name of the durable storage directory.
         $repoKey = preg_replace('/[^[:alnum:]\.]+/', '.', $url);
 
         $storagePath = Plugin::getStoragePath($config) . DIRECTORY_SEPARATOR . $repoKey;
         $fs = new Filesystem();
         $fs->ensureDirectoryExists($storagePath);
 
-        // If the durable storage directory doesn't yet have root metadata, copy
+        // If the durable storage directory doesn't have any root metadata, copy
         // the initial root metadata into it.
         $rootMetadataPath = "$storagePath/root.json";
         if (!file_exists($rootMetadataPath)) {
-            //  We expect the initial root metadata to be in a directory
-            // called `tuf`, adjacent to the active composer.json.
+            // We expect the initial root metadata to be in a directory called `tuf`,
+            // adjacent to the active composer.json.
             $initialRootMetadataPath = implode(DIRECTORY_SEPARATOR, [
-                // This is the directory which contains the active composer.json.
+                // Determine the directory containing the active composer.json.
                 dirname($config->getConfigSource()->getName()),
                 'tuf',
                 $repoKey,
