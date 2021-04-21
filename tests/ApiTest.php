@@ -76,10 +76,12 @@ class ApiTest extends TestCase
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
                 'url' => $url,
-                'tuf' => [
-                    '_updater' => $updater->reveal(),
-                ],
+                'tuf' => true,
             ]);
+        $reflector = new \ReflectionObject($repository);
+        $property = $reflector->getProperty('updater');
+        $property->setAccessible(true);
+        $property->setValue($repository, $updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
