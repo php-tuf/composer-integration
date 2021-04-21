@@ -46,13 +46,10 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = $repoConfig['url'];
 
         if (isset($repoConfig['tuf'])) {
+            $repoKey = preg_replace('/[^[:alnum:]\.]+/', '.', $url);
+
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-            // Use the repository URL to derive a path where we can persist the TUF
-            // data.
-            $repoPath = implode(DIRECTORY_SEPARATOR, [
-                Plugin::getStoragePath($config),
-                preg_replace('/[^[:alnum:]\.]/', '-', $url),
-            ]);
+            $repoPath = Plugin::getStoragePath($config) . DIRECTORY_SEPARATOR . $repoKey;
 
             $fs = new Filesystem();
             $fs->ensureDirectoryExists($repoPath);
@@ -62,10 +59,12 @@ class TufValidatedComposerRepository extends ComposerRepository
             // it doesn't already exist.
             $rootFile = $repoPath . '/root.json';
             if (!file_exists($rootFile)) {
-                $sourcePath = realpath($repoConfig['tuf']['root']);
-                if (!$fs->copy($sourcePath, $rootFile)) {
-                    throw new FilesystemException("Could not copy '$sourcePath' to '$rootFile");
-                }
+                $sourcePath = implode(DIRECTORY_SEPARATOR, [
+                    dirname($config->getConfigSource()->getName()),
+                    'tuf',
+                    $repoKey,
+                ]);
+                $fs->copy("$sourcePath.json", $rootFile);
             }
 
             // For unit testing purposes, allow the updater instance to be passed in
