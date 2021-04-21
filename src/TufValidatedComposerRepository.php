@@ -68,14 +68,13 @@ class TufValidatedComposerRepository extends ComposerRepository
                 }
             }
 
-            // For unit testing purposes, allow the updater instance to be passed in
-            // the plugin configuration.
-            if (isset($repoConfig['tuf']['_updater'])) {
-                $this->updater = $repoConfig['tuf']['_updater'];
-            } else {
-                $fetcher = GuzzleFileFetcher::createFromUri($url);
-                $this->updater = new ComposerCompatibleUpdater($fetcher, [], new FileStorage($repoPath));
-            }
+            // For unit testing purposes, allow the updater instance to be provided
+            // by calling code before this object is created.
+            $this->updater = new ComposerCompatibleUpdater(
+                GuzzleFileFetcher::createFromUri($url),
+                [],
+                new FileStorage($repoPath)
+            );
 
             // The Python tool (which generates the server-side TUF repository) will
             // put all signed files into /targets, so ensure that all downloads are

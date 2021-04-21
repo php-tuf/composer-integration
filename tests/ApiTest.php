@@ -75,9 +75,12 @@ class ApiTest extends TestCase
                 'url' => 'https://example.com',
                 'tuf' => [
                     'root' => __DIR__ . '/../test-project/root.json',
-                    '_updater' => $updater->reveal(),
                 ],
             ]);
+        $reflector = new \ReflectionObject($repository);
+        $property = $reflector->getProperty('updater');
+        $property->setAccessible(true);
+        $property->setValue($repository, $updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
