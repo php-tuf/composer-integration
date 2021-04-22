@@ -116,14 +116,13 @@ class TufValidatedComposerRepository extends ComposerRepository
         // to the active composer.json.
         $searchDir = dirname($config->getConfigSource()->getName()) . DIRECTORY_SEPARATOR . 'tuf';
 
-        $map = function (string $candidate) use ($searchDir): string
-        {
-            return $searchDir . DIRECTORY_SEPARATOR . $candidate . '.json';
-        };
-        $candidates = array_map($map, $candidates);
-        $candidates = array_filter($candidates, 'file_exists');
-
-        return reset($candidates) ?: null;
+        foreach ($candidates as $candidate) {
+            $location = $searchDir . DIRECTORY_SEPARATOR . $candidate . '.json';
+            if (file_exists($location)) {
+                return $location;
+            }
+        }
+        return null;
     }
 
     /**
