@@ -7,6 +7,7 @@ use Composer\IO\NullIO;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
+use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\ComposerIntegration\Plugin;
@@ -55,6 +56,8 @@ class ApiTest extends TestCase
     protected function tearDown(): void
     {
         $this->composer->getPluginManager()->uninstallPlugin($this->plugin);
+        (new Filesystem())
+            ->removeDirectory(__DIR__ . '/vendor');
         parent::tearDown();
     }
 
