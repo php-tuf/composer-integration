@@ -20,10 +20,14 @@ with.
 
 In accordance with the [TUF specification](https://github.com/theupdateframework/specification/blob/v1.0.9/tuf-spec.md#5-detailed-workflows),
 projects using this plugin must supply a set of trusted keys for each repository they want to protect with TUF. Each
-TUF-protected repository should provide a JSON file named for the repository URL, with non-alphanumeric characters
-replaced by a single period. For example, if the repository URL is `https://repo.example.net:1234/packages`, then the
-key file should be called `https.repo.example.net.1234.packages.json`. All key files must be stored in a directory
-called`tuf`, adjacent to the project's `composer.json` file.
+TUF-protected repository should provide a JSON file with its root keys. The file may be named in one of a few ways,
+which will be searched for in this order:
+
+1. A SHA-256 hash of the full repository URL. For example, if the repository URL is `http://repo.example.net/composer`,
+   the JSON file can be named `d82cfa7a5a4ba36bd2bcc9d3f7b24bdddbe1209b71ebebaeebc59f6f0ea48792.json`.
+2. The host name of the repository. To continue the previous example, the JSON file can be named `repo.example.net`.
+
+All root key files must be stored in a directory called`tuf`, adjacent to the project's `composer.json` file.
 
 The TUF repository must track the Composer repository, signing new versions of packages as they are released as well as
 the Composer package metadata for them.
