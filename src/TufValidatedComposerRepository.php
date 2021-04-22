@@ -72,7 +72,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      * @return \ArrayAccess
      *   A durable storage object for this repository's TUF data.
      *
-     * @throws \DomainException
+     * @throws \RuntimeException
      *   If not root metadata could be found for this repository.
      */
     private function initializeStorage(string $url, Config $config): \ArrayAccess
@@ -86,7 +86,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             if ($initialRootMetadataPath) {
                 $storage['root.json'] = file_get_contents($initialRootMetadataPath);
             } else {
-                throw new \DomainException("No TUF root metadata was found for repository $url.");
+                throw new \RuntimeException("No TUF root metadata was found for repository $url.");
             }
         }
         return $storage;
