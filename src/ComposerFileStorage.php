@@ -51,10 +51,7 @@ class ComposerFileStorage extends FileStorage
      */
     public static function create(string $url, Config $config): self
     {
-        $basePath = implode(DIRECTORY_SEPARATOR, [
-            static::basePath($config),
-            preg_replace('/[^[:alnum:]\.]/', '-', $url),
-        ]);
+        $basePath = static::basePath($config) . DIRECTORY_SEPARATOR . hash('sha256', $url);
         return new static($basePath);
     }
 }
