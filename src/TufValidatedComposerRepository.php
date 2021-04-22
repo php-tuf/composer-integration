@@ -45,13 +45,11 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
-            $repoPath = $this->initializeStorage($url, $config);
-
             $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
                 [],
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-                new FileStorage($repoPath)
+                $this->initializeStorage($url, $config)
             );
 
             // The Python tool (which generates the server-side TUF repository) will
@@ -66,44 +64,68 @@ class TufValidatedComposerRepository extends ComposerRepository
     }
 
     /**
-     * Initializes the persistent storage for this repository's TUF data.
+     * Initializes the durable storage for this repository's TUF data.
      *
      * @param string $url
      *   The repository URL.
      * @param Config $config
      *   The Composer configuration.
      *
-     * @return string
-     *   The path of the persistent storage for this repository's TUF data.
+     * @return \ArrayAccess
+     *   A durable storage object for this repository's TUF data.
+     *
+     * @throws \DomainException
+     *   If not root metadata could be found for this repository.
      */
-    private function initializeStorage(string $url, Config $config): string
+    private function initializeStorage(string $url, Config $config): \ArrayAccess
     {
-        // Use the repository URL to derive an identifier. We expect the initial
-        // root metadata to be named IDENTIFIER.json. The identifier will also be
-        // used as the name of the durable storage directory.
-        $repoKey = preg_replace('/[^[:alnum:]\.]+/', '.', $url);
+        $storage = ComposerFileStorage::create($url, $config);
 
-        $storagePath = Plugin::getStoragePath($config) . DIRECTORY_SEPARATOR . $repoKey;
-        $fs = new Filesystem();
-        $fs->ensureDirectoryExists($storagePath);
-
-        // If the durable storage directory doesn't have any root metadata, copy
-        // the initial root metadata into it.
-        $rootMetadataPath = "$storagePath/root.json";
-        if (!file_exists($rootMetadataPath)) {
-            // We expect the initial root metadata to be in a directory called `tuf`,
-            // adjacent to the active composer.json.
-            $initialRootMetadataPath = implode(DIRECTORY_SEPARATOR, [
-                // Determine the directory containing the active composer.json.
-                dirname($config->getConfigSource()->getName()),
-                'tuf',
-                $repoKey,
-            ]);
-            // If the initial root metadata file doesn't exist, this will throw
-            // an exception.
-            $fs->copy("$initialRootMetadataPath.json", $rootMetadataPath);
+        // If the durable storage doesn't have any root metadata, copy the initial
+        // root metadata into it.
+        if (!isset($storage['root.json'])) {
+            $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
+            if ($initialRootMetadataPath) {
+                $storage['root.json'] = file_get_contents($initialRootMetadataPath);
+            } else {
+                throw new \DomainException("No TUF root metadata was found for repository $url.");
+            }
         }
-        return $storagePath;
+        return $storage;
+    }
+
+    /**
+     * Tries to determine the location of the initial root metadata for a repository.
+     *
+     * @param string $url
+     *   The repository URL.
+     * @param Config $config
+     *   The current Composer configuration.
+     *
+     * @return string|null
+     *   The path of the initial root metadata for the repository, or null if none
+     *   was found.
+     */
+    private function locateRootMetadata(string $url, Config $config): ?string
+    {
+        // The root metadata can either be named with the SHA-256 hash of the URL,
+        // or the host name only.
+        $candidates = [
+            hash('sha256', $url),
+            parse_url($url, PHP_URL_HOST),
+        ];
+        // We expect the root metadata to be in a directory called `tuf`, adjacent
+        // to the active composer.json.
+        $searchDir = dirname($config->getConfigSource()->getName()) . DIRECTORY_SEPARATOR . 'tuf';
+
+        $map = function (string $candidate) use ($searchDir): string
+        {
+            return $searchDir . DIRECTORY_SEPARATOR . $candidate . '.json';
+        };
+        $candidates = array_map($map, $candidates);
+        $candidates = array_filter($candidates, 'file_exists');
+
+        return reset($candidates) ?: null;
     }
 
     /**
