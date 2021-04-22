@@ -73,7 +73,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   A durable storage object for this repository's TUF data.
      *
      * @throws \RuntimeException
-     *   If not root metadata could be found for this repository.
+     *   If no root metadata could be found for this repository.
      */
     private function initializeStorage(string $url, Config $config): \ArrayAccess
     {
