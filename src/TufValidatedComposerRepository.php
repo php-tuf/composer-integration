@@ -3,17 +3,14 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Config;
-use Composer\Downloader\FilesystemException;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
-use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
-use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Exception\NotFoundException;
 
@@ -43,48 +40,89 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
-        $url = $repoConfig['url'];
+        $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
-            // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-            // Use the repository URL to derive a path where we can persist the TUF
-            // data.
-            $repoPath = implode(DIRECTORY_SEPARATOR, [
-                Plugin::getStoragePath($config),
-                preg_replace('/[^[:alnum:]\.]/', '-', $url),
-            ]);
-
-            $fs = new Filesystem();
-            $fs->ensureDirectoryExists($repoPath);
-
-            // We expect the repository to have a root metadata file in a known
-            // good state. Copy that file to our persistent storage location if
-            // it doesn't already exist.
-            $rootFile = $repoPath . '/root.json';
-            if (!file_exists($rootFile)) {
-                $sourcePath = realpath($repoConfig['tuf']['root']);
-                if (!$fs->copy($sourcePath, $rootFile)) {
-                    throw new FilesystemException("Could not copy '$sourcePath' to '$rootFile");
-                }
-            }
-
-            // For unit testing purposes, allow the updater instance to be provided
-            // by calling code before this object is created.
             $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
                 [],
-                new FileStorage($repoPath)
+                // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
+                $this->initializeStorage($url, $config)
             );
 
             // The Python tool (which generates the server-side TUF repository) will
             // put all signed files into /targets, so ensure that all downloads are
             // prefixed with that.
-            $repoConfig['url'] .= '/targets';
+            $repoConfig['url'] = "$url/targets";
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
         }
         parent::__construct($repoConfig, $io, $config, $httpDownloader, $eventDispatcher);
+    }
+
+    /**
+     * Initializes the durable storage for this repository's TUF data.
+     *
+     * @param string $url
+     *   The repository URL.
+     * @param Config $config
+     *   The Composer configuration.
+     *
+     * @return \ArrayAccess
+     *   A durable storage object for this repository's TUF data.
+     *
+     * @throws \RuntimeException
+     *   If not root metadata could be found for this repository.
+     */
+    private function initializeStorage(string $url, Config $config): \ArrayAccess
+    {
+        $storage = ComposerFileStorage::create($url, $config);
+
+        // If the durable storage doesn't have any root metadata, copy the initial
+        // root metadata into it.
+        if (!isset($storage['root.json'])) {
+            $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
+            if ($initialRootMetadataPath) {
+                $storage['root.json'] = file_get_contents($initialRootMetadataPath);
+            } else {
+                throw new \RuntimeException("No TUF root metadata was found for repository $url.");
+            }
+        }
+        return $storage;
+    }
+
+    /**
+     * Tries to determine the location of the initial root metadata for a repository.
+     *
+     * @param string $url
+     *   The repository URL.
+     * @param Config $config
+     *   The current Composer configuration.
+     *
+     * @return string|null
+     *   The path of the initial root metadata for the repository, or null if none
+     *   was found.
+     */
+    private function locateRootMetadata(string $url, Config $config): ?string
+    {
+        // The root metadata can either be named with the SHA-256 hash of the URL,
+        // or the host name only.
+        $candidates = [
+            hash('sha256', $url),
+            parse_url($url, PHP_URL_HOST),
+        ];
+        // We expect the root metadata to be in a directory called `tuf`, adjacent
+        // to the active composer.json.
+        $searchDir = dirname($config->getConfigSource()->getName()) . DIRECTORY_SEPARATOR . 'tuf';
+
+        foreach ($candidates as $candidate) {
+            $location = $searchDir . DIRECTORY_SEPARATOR . $candidate . '.json';
+            if (file_exists($location)) {
+                return $location;
+            }
+        }
+        return null;
     }
 
     /**

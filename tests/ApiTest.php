@@ -43,8 +43,9 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
+        $dir = __DIR__ . '/../test-project';
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), []);
+        $this->composer = $factory->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
         $this->composer->getPluginManager()->addPlugin($this->plugin);
     }
 
@@ -62,6 +63,8 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(): void
     {
+        $url = 'http://localhost:8080';
+
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $updater->getLength('packages.json')
             ->willReturn(1024)
@@ -72,10 +75,8 @@ class ApiTest extends TestCase
 
         $repository = $this->composer->getRepositoryManager()
             ->createRepository('composer', [
-                'url' => 'https://example.com',
-                'tuf' => [
-                    'root' => __DIR__ . '/../test-project/root.json',
-                ],
+                'url' => $url,
+                'tuf' => true,
             ]);
         $reflector = new \ReflectionObject($repository);
         $property = $reflector->getProperty('updater');
@@ -86,7 +87,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'https://example.com/targets/packages.json',
+            "$url/targets/packages.json",
             'metadata',
             [
                 'repository' => $repository,
@@ -101,7 +102,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            'https://example.com/targets/bogus.json',
+            "$url/targets/bogus.json",
             'metadata',
             [
                 'repository' => $repository,

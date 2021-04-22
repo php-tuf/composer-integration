@@ -3,7 +3,6 @@
 namespace Tuf\ComposerIntegration;
 
 use Composer\Composer;
-use Composer\Config;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
@@ -177,29 +176,11 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     public function uninstall(Composer $composer, IOInterface $io)
     {
-        $path = static::getStoragePath($composer->getConfig());
+        $path = ComposerFileStorage::basePath($composer->getConfig());
         $io->info("Deleting TUF data in $path");
 
         $fs = new Filesystem();
         $fs->removeDirectoryPhp($path);
-    }
-
-    /**
-     * Returns the base path where TUF data will be persisted.
-     *
-     * @param Config $config
-     *   The Composer configuration.
-     *
-     * @return string
-     *   The base path where TUF data will be persisted.
-     */
-    public static function getStoragePath(Config $config): string
-    {
-        return implode(DIRECTORY_SEPARATOR, [
-            rtrim($config->get('vendor-dir'), DIRECTORY_SEPARATOR),
-            'composer',
-            'tuf',
-        ]);
     }
 
     /**
