@@ -8,11 +8,9 @@ use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
-use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
-use Tuf\Client\DurableStorage\FileStorage;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Exception\NotFoundException;
 
