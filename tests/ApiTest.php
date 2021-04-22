@@ -4,12 +4,15 @@ namespace Tuf\ComposerIntegration\Tests;
 
 use Composer\Factory;
 use Composer\IO\NullIO;
+use Composer\Package\CompletePackage;
+use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
@@ -62,6 +65,61 @@ class ApiTest extends TestCase
     }
 
     /**
+     * Sets the TUF updater in a TUF-validated repository instance.
+     *
+     * @param TufValidatedComposerRepository $repository
+     *   The TUF-validated repository.
+     * @param Updater $updater
+     *   The TUF updater to use.
+     */
+    private function setUpdater(TufValidatedComposerRepository $repository, Updater $updater): void
+    {
+        $reflector = new \ReflectionClass(TufValidatedComposerRepository::class);
+        $property = $reflector->getProperty('updater');
+        $property->setAccessible(true);
+        $property->setValue($repository, $updater);
+    }
+
+    /**
+     * @covers ::configurePackageTransportOptions
+     */
+    public function testPackageTransportOptions(): void
+    {
+        $repository = new class () extends TufValidatedComposerRepository
+        {
+            public function __construct()
+            {
+            }
+
+            public function getRepoConfig()
+            {
+                return [
+                    'url' => 'https://packages.drupal.org/8',
+                ];
+            }
+
+            public function configurePackageTransportOptions(PackageInterface $package)
+            {
+                parent::configurePackageTransportOptions($package);
+            }
+        };
+
+        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $updater->getLength('drupal/token/1.9.0.0')
+            ->willReturn(36)
+            ->shouldBeCalled();
+        $this->setUpdater($repository, $updater->reveal());
+
+        $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9.0');
+        $repository->configurePackageTransportOptions($package);
+        $options = $package->getTransportOptions();
+        $this->assertArrayHasKey('tuf', $options);
+        $this->assertSame('https://packages.drupal.org/8', $options['tuf']['repository']);
+        $this->assertSame('drupal/token/1.9.0.0', $options['tuf']['target']);
+        $this->assertSame(36, $options['max_file_size']);
+    }
+
+    /**
      * @covers ::preFileDownload
      */
     public function testPreFileDownload(): void
@@ -81,10 +139,7 @@ class ApiTest extends TestCase
                 'url' => $url,
                 'tuf' => true,
             ]);
-        $reflector = new \ReflectionObject($repository);
-        $property = $reflector->getProperty('updater');
-        $property->setAccessible(true);
-        $property->setValue($repository, $updater->reveal());
+        $this->setUpdater($repository, $updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
