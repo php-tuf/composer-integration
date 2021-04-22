@@ -25,7 +25,8 @@ which will be searched for in this order:
 
 1. A SHA-256 hash of the full repository URL. For example, if the repository URL is `http://repo.example.net/composer`,
    the JSON file can be named `d82cfa7a5a4ba36bd2bcc9d3f7b24bdddbe1209b71ebebaeebc59f6f0ea48792.json`.
-2. The host name of the repository. To continue the previous example, the JSON file can be named `repo.example.net`.
+2. The host name of the repository. To continue the previous example, the JSON file can be named 
+   `repo.example.net.json`.
 
 All root key files must be stored in a directory called`tuf`, adjacent to the project's `composer.json` file.
 
