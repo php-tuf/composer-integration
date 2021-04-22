@@ -28,7 +28,7 @@ which will be searched for in this order:
 2. The host name of the repository. To continue the previous example, the JSON file can be named 
    `repo.example.net.json`.
 
-All root key files must be stored in a directory called`tuf`, adjacent to the project's `composer.json` file.
+All root key files must be stored in a directory called `tuf`, adjacent to the project's `composer.json` file.
 
 The TUF repository must track the Composer repository, signing new versions of packages as they are released as well as
 the Composer package metadata for them.
