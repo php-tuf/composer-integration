@@ -49,7 +49,7 @@
             "pipenv install",
             "rm -r -f metadata",
             "pipenv run python generate.py",
-            "mkdir ./test-project/tuf",
+            "mkdir -p ./test-project/tuf",
             "cp -f ./metadata/root.json ./test-project/tuf/localhost.json"
         ],
         "post-install-cmd": "@post-update-cmd",

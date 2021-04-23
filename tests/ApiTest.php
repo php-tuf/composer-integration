@@ -7,10 +7,12 @@ use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
+use Composer\Plugin\PostFileDownloadEvent;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
+use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\Plugin;
@@ -65,7 +67,33 @@ class ApiTest extends TestCase
     }
 
     /**
-     * Sets the TUF updater in a TUF-validated repository instance.
+     * Creates a TUF-validated repository object with a mocked TUF updater.
+     *
+     * @param Updater $updater
+     *   The TUF updater to use.
+     * @param array $config
+     *   The repository configuration.
+     *
+     * @return TufValidatedComposerRepository
+     *   The created repository object.
+     */
+    private function mockRepository(Updater $updater, array $config): TufValidatedComposerRepository
+    {
+        $manager = $this->composer->getRepositoryManager();
+
+        $config['tuf'] = true;
+        $repository = $manager->createRepository('composer', $config);
+        $this->setUpdater($repository, $updater);
+        // Prepend the new repository to the list, so that it will be found first
+        // if the plugin searches for the repository by its URL.
+        // @see \Tuf\ComposerIntegration\Plugin::postFileDownload()
+        $manager->prependRepository($repository);
+
+        return $repository;
+    }
+
+    /**
+     * Sets the TUF updater in a TUF-validated repository object.
      *
      * @param TufValidatedComposerRepository $repository
      *   The TUF-validated repository.
@@ -81,7 +109,9 @@ class ApiTest extends TestCase
     }
 
     /**
-     * @covers ::configurePackageTransportOptions
+     * Tests that package transport options are configured as expected.
+     *
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions
      */
     public function testPackageTransportOptions(): void
     {
@@ -120,26 +150,71 @@ class ApiTest extends TestCase
     }
 
     /**
+     * @covers ::postFileDownload
+     */
+    public function testPostFileDownload(): void
+    {
+        $url = 'http://localhost:8080';
+        $stream = Argument::type('\Psr\Http\Message\StreamInterface');
+        $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
+        $package->setTransportOptions([
+           'tuf' => [
+               'repository' => "$url/targets",
+               'target' => 'drupal/token/1.9.0.0',
+           ],
+        ]);
+        $eventDispatcher = $this->composer->getEventDispatcher();
+
+        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => $url,
+        ]);
+        $updater->verify('packages.json', $stream)->shouldBeCalled();
+        $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
+
+        $event = new PostFileDownloadEvent(
+            PluginEvents::POST_FILE_DOWNLOAD,
+            null,
+            null,
+            "$url/targets/packages.json",
+            'metadata',
+            [
+                'repository' => $repository,
+                'response' => $this->prophesize('\Composer\Util\Http\Response')->reveal(),
+            ]
+        );
+        $eventDispatcher->dispatch($event->getName(), $event);
+
+        $event = new PostFileDownloadEvent(
+            PluginEvents::POST_FILE_DOWNLOAD,
+            __FILE__,
+            null,
+            'https://ftp.drupal.org/files/projects/token-8.x-1.9.zip',
+            'package',
+            $package
+        );
+        $eventDispatcher->dispatch($event->getName(), $event);
+    }
+
+    /**
      * @covers ::preFileDownload
      */
     public function testPreFileDownload(): void
     {
         $url = 'http://localhost:8080';
+        $eventDispatcher = $this->composer->getEventDispatcher();
 
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => $url,
+        ]);
+
         $updater->getLength('packages.json')
             ->willReturn(1024)
             ->shouldBeCalled();
         $updater->getLength('bogus.json')
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
-
-        $repository = $this->composer->getRepositoryManager()
-            ->createRepository('composer', [
-                'url' => $url,
-                'tuf' => true,
-            ]);
-        $this->setUpdater($repository, $updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
@@ -151,7 +226,7 @@ class ApiTest extends TestCase
                 'repository' => $repository,
             ]
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
         $this->assertSame(1024, $options['max_file_size']);
 
@@ -166,7 +241,7 @@ class ApiTest extends TestCase
                 'repository' => $repository,
             ]
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
         $this->assertSame(TufValidatedComposerRepository::MAX_404_BYTES, $options['max_file_size']);
     }
