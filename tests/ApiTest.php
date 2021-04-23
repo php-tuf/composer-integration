@@ -7,10 +7,12 @@ use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
+use Composer\Plugin\PostFileDownloadEvent;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
+use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\Plugin;
@@ -81,7 +83,9 @@ class ApiTest extends TestCase
     }
 
     /**
-     * @covers ::configurePackageTransportOptions
+     * Tests that package transport options are configured as expected.
+     *
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions
      */
     public function testPackageTransportOptions(): void
     {
@@ -117,6 +121,37 @@ class ApiTest extends TestCase
         $this->assertSame('https://packages.drupal.org/8', $options['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $options['tuf']['target']);
         $this->assertSame(36, $options['max_file_size']);
+    }
+
+    /**
+     * @covers ::postFileDownload
+     */
+    public function testPostFileDownload(): void
+    {
+        $url = 'http://localhost:8080';
+        $stream = Argument::type('\Psr\Http\Message\StreamInterface');
+
+        $repository = $this->composer->getRepositoryManager()
+            ->createRepository('composer', [
+                'url' => $url,
+                'tuf' => true,
+            ]);
+        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $updater->verify('packages.json', $stream)->shouldBeCalled();
+        $this->setUpdater($repository, $updater->reveal());
+
+        $event = new PostFileDownloadEvent(
+            PluginEvents::POST_FILE_DOWNLOAD,
+            null,
+            null,
+            "$url/targets/packages.json",
+            'metadata',
+            [
+                'repository' => $repository,
+                'response' => $this->prophesize('\Composer\Util\Http\Response')->reveal(),
+            ]
+        );
+        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
     }
 
     /**
