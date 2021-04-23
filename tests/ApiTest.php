@@ -163,6 +163,7 @@ class ApiTest extends TestCase
                'target' => 'drupal/token/1.9.0.0',
            ],
         ]);
+        $eventDispatcher = $this->composer->getEventDispatcher();
 
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $repository = $this->mockRepository($updater->reveal(), [
@@ -182,7 +183,7 @@ class ApiTest extends TestCase
                 'response' => $this->prophesize('\Composer\Util\Http\Response')->reveal(),
             ]
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
 
         $event = new PostFileDownloadEvent(
             PluginEvents::POST_FILE_DOWNLOAD,
@@ -192,7 +193,7 @@ class ApiTest extends TestCase
             'package',
             $package
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
     }
 
     /**
@@ -201,18 +202,19 @@ class ApiTest extends TestCase
     public function testPreFileDownload(): void
     {
         $url = 'http://localhost:8080';
+        $eventDispatcher = $this->composer->getEventDispatcher();
 
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => $url,
+        ]);
+
         $updater->getLength('packages.json')
             ->willReturn(1024)
             ->shouldBeCalled();
         $updater->getLength('bogus.json')
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
-
-        $repository = $this->mockRepository($updater->reveal(), [
-            'url' => $url,
-        ]);
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
@@ -224,7 +226,7 @@ class ApiTest extends TestCase
                 'repository' => $repository,
             ]
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
         $this->assertSame(1024, $options['max_file_size']);
 
@@ -239,7 +241,7 @@ class ApiTest extends TestCase
                 'repository' => $repository,
             ]
         );
-        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $eventDispatcher->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
         $this->assertSame(TufValidatedComposerRepository::MAX_404_BYTES, $options['max_file_size']);
     }
