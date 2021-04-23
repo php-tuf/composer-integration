@@ -130,14 +130,23 @@ class ApiTest extends TestCase
     {
         $url = 'http://localhost:8080';
         $stream = Argument::type('\Psr\Http\Message\StreamInterface');
+        $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
+        $package->setTransportOptions([
+           'tuf' => [
+               'repository' => "$url/targets",
+               'target' => 'drupal/token/1.9.0.0',
+           ],
+        ]);
 
-        $repository = $this->composer->getRepositoryManager()
-            ->createRepository('composer', [
-                'url' => $url,
-                'tuf' => true,
-            ]);
+        $manager = $this->composer->getRepositoryManager();
+        $repository = $manager->createRepository('composer', [
+            'url' => $url,
+            'tuf' => true,
+        ]);
+        $manager->prependRepository($repository);
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $updater->verify('packages.json', $stream)->shouldBeCalled();
+        $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
         $this->setUpdater($repository, $updater->reveal());
 
         $event = new PostFileDownloadEvent(
@@ -150,6 +159,16 @@ class ApiTest extends TestCase
                 'repository' => $repository,
                 'response' => $this->prophesize('\Composer\Util\Http\Response')->reveal(),
             ]
+        );
+        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+
+        $event = new PostFileDownloadEvent(
+            PluginEvents::POST_FILE_DOWNLOAD,
+            __FILE__,
+            null,
+            'https://ftp.drupal.org/files/projects/token-8.x-1.9.zip',
+            'package',
+            $package
         );
         $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
     }
