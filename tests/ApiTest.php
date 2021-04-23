@@ -67,7 +67,33 @@ class ApiTest extends TestCase
     }
 
     /**
-     * Sets the TUF updater in a TUF-validated repository instance.
+     * Creates a TUF-validated repository object with a mocked TUF updater.
+     *
+     * @param Updater $updater
+     *   The TUF updater to use.
+     * @param array $config
+     *   The repository configuration.
+     *
+     * @return TufValidatedComposerRepository
+     *   The created repository object.
+     */
+    private function mockRepository(Updater $updater, array $config): TufValidatedComposerRepository
+    {
+        $manager = $this->composer->getRepositoryManager();
+
+        $config['tuf'] = true;
+        $repository = $manager->createRepository('composer', $config);
+        $this->setUpdater($repository, $updater);
+        // Prepend the new repository to the list, so that it will be found first
+        // if the plugin searches for the repository by its URL.
+        // @see \Tuf\ComposerIntegration\Plugin::postFileDownload()
+        $manager->prependRepository($repository);
+
+        return $repository;
+    }
+
+    /**
+     * Sets the TUF updater in a TUF-validated repository object.
      *
      * @param TufValidatedComposerRepository $repository
      *   The TUF-validated repository.
@@ -138,16 +164,12 @@ class ApiTest extends TestCase
            ],
         ]);
 
-        $manager = $this->composer->getRepositoryManager();
-        $repository = $manager->createRepository('composer', [
-            'url' => $url,
-            'tuf' => true,
-        ]);
-        $manager->prependRepository($repository);
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => $url,
+        ]);
         $updater->verify('packages.json', $stream)->shouldBeCalled();
         $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
-        $this->setUpdater($repository, $updater->reveal());
 
         $event = new PostFileDownloadEvent(
             PluginEvents::POST_FILE_DOWNLOAD,
@@ -188,12 +210,9 @@ class ApiTest extends TestCase
             ->willThrow('\Tuf\Exception\NotFoundException')
             ->shouldBeCalled();
 
-        $repository = $this->composer->getRepositoryManager()
-            ->createRepository('composer', [
-                'url' => $url,
-                'tuf' => true,
-            ]);
-        $this->setUpdater($repository, $updater->reveal());
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => $url,
+        ]);
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
