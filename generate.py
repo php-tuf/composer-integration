@@ -61,7 +61,7 @@ def generate_fixture():
     repository.targets('package').add_target('drupal/token/1.9.0.0')
 
     # Write and publish the repository.
-    repository.mark_dirty(['snapshot', 'targets', 'timestamp', 'package_metadata'])
+    repository.mark_dirty(['snapshot', 'targets', 'timestamp', 'package_metadata', 'package'])
     repository.status()
     repository.writeall(consistent_snapshot=True)
 
