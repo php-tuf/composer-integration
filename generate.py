@@ -47,7 +47,7 @@ def generate_fixture():
     repository.timestamp.add_verification_key(timestamp_public)
     repository.timestamp.load_signing_key(timestamp_private)
 
-    # Create delegated role and add their keys.
+    # Create delegated roles and add their keys.
     repository.targets.delegate('package_metadata', [package_metadata_public], ['files/packages/8/p2/*'])
     repository.targets('package_metadata').load_signing_key(package_metadata_private)
     repository.targets.delegate('package', [package_public], ['drupal/*'])
