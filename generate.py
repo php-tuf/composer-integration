@@ -34,8 +34,6 @@ def generate_fixture():
     (targets_public, targets_private) = import_keypair('targets')
     (snapshot_public, snapshot_private) = import_keypair('snapshot')
     (timestamp_public, timestamp_private) = import_keypair('timestamp')
-    (package_metadata_public, package_metadata_private) = import_keypair('package_metadata')
-    (package_public, package_private) = import_keypair('package')
 
     # Assign the keys to their roles.
     repository.root.add_verification_key(root_public)
@@ -47,21 +45,17 @@ def generate_fixture():
     repository.timestamp.add_verification_key(timestamp_public)
     repository.timestamp.load_signing_key(timestamp_private)
 
-    # Create delegated roles and add their keys.
-    repository.targets.delegate('package_metadata', [package_metadata_public], ['files/packages/8/p2/*'])
-    repository.targets('package_metadata').load_signing_key(package_metadata_private)
-    repository.targets.delegate('package', [package_public], ['drupal/*'])
-    repository.targets('package').load_signing_key(package_private)
-
     repository.mark_dirty(['root', 'snapshot', 'targets', 'timestamp'])
 
     # Add more targets here as needed.
-    repository.targets.add_targets(['packages.json'])
-    repository.targets('package_metadata').add_target('files/packages/8/p2/drupal/token.json')
-    repository.targets('package').add_target('drupal/token/1.9.0.0')
+    repository.targets.add_targets([
+        'packages.json',
+        'files/packages/8/p2/drupal/token.json',
+        'drupal/token/1.9.0.0'
+    ])
 
     # Write and publish the repository.
-    repository.mark_dirty(['snapshot', 'targets', 'timestamp', 'package_metadata', 'package'])
+    repository.mark_dirty(['snapshot', 'targets', 'timestamp'])
     repository.status()
     repository.writeall(consistent_snapshot=True)
 
