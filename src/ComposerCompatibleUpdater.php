@@ -4,7 +4,7 @@ namespace Tuf\ComposerIntegration;
 
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\Updater;
-use Tuf\Metadata\TargetsMetadata;
+use Tuf\Exception\NotFoundException;
 
 /**
  * Defines an updater that exposes additional information about TUF targets.
@@ -48,11 +48,11 @@ class ComposerCompatibleUpdater extends Updater
     {
         $this->refresh();
 
-        // @todo Handle the possibility that the target's metadata might not be
-        // in targets.json, once https://github.com/php-tuf/php-tuf/pull/141 is
-        // merged.
-        // @see https://github.com/php-tuf/php-tuf/issues/116
-        return TargetsMetadata::createFromJson($this->durableStorage['targets.json'])
-            ->getLength($target);
+        $metadata = $this->getMetadataForTarget($target);
+        if ($metadata) {
+            return $metadata->getLength($target);
+        } else {
+            throw new NotFoundException($target, 'Target');
+        }
     }
 }
