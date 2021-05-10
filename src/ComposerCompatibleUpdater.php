@@ -41,8 +41,10 @@ class ComposerCompatibleUpdater extends Updater
      *   The target path, as known to TUF.
      *
      * @return int
-     *   The expected size of the target, in bytes. If not known, a maximum
-     *   number of bytes is returned.
+     *   The expected size of the target, in bytes.
+     *
+     * @throws \Tuf\Exception\NotFoundException
+     *   Thrown if the target is not known to TUF.
      */
     public function getLength(string $target): int
     {
