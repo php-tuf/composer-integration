@@ -42,7 +42,8 @@
     "require-dev": {
         "composer/composer": "^2.1",
         "phpunit/phpunit": "^9.5",
-        "phpspec/prophecy-phpunit": "^2.0"
+        "phpspec/prophecy-phpunit": "^2.0",
+        "roave/security-advisories": "dev-latest"
     },
     "scripts": {
         "make-fixture": [
