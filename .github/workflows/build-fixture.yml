@@ -20,7 +20,7 @@ jobs:
       - name: Install PHP and Composer 2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 7.3
+          php-version: 8.0
           tools: 'composer:2.1.0'
       - name: Install dependencies
         run: 'composer install ${{ env.COMPOSER_FLAGS }}'
