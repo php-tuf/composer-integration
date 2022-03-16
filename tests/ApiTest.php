@@ -57,6 +57,9 @@ class ApiTest extends TestCase
         $this->assertFileExists($source_package);
         $source_package = file_get_contents($source_package);
         $source_package = json_decode($source_package, true);
+        $source_package += [
+            'version' => '1.0.0',
+        ];
 
         $dir = __DIR__ . '/../test-project';
         $factory = new Factory();
