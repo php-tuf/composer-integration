@@ -19,6 +19,9 @@
     ],
     "minimum-stability": "dev",
     "config": {
+        "allow-plugins": {
+            "php-tuf/composer-integration": true
+        },
         "secure-http": false
     },
     "prefer-stable": true

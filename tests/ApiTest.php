@@ -5,6 +5,7 @@ namespace Tuf\ComposerIntegration\Tests;
 use Composer\Factory;
 use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
+use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PostFileDownloadEvent;
@@ -49,10 +50,18 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
+        // Read the plugin's composer.json to ensure that we can load the plugin package
+        // to satisfy the Composer plugin manager.
+        // @see \Composer\Plugin\PluginManager::addPlugin()
+        $source_package = __DIR__ . '/../composer.json';
+        $this->assertFileExists($source_package);
+        $source_package = file_get_contents($source_package);
+        $source_package = json_decode($source_package, true);
+
         $dir = __DIR__ . '/../test-project';
         $factory = new Factory();
         $this->composer = $factory->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
-        $this->composer->getPluginManager()->addPlugin($this->plugin);
+        $this->composer->getPluginManager()->addPlugin($this->plugin, false, (new ArrayLoader())->load($source_package));
     }
 
     /**
@@ -128,7 +137,7 @@ class ApiTest extends TestCase
                 ];
             }
 
-            public function configurePackageTransportOptions(PackageInterface $package)
+            public function configurePackageTransportOptions(PackageInterface $package): void
             {
                 parent::configurePackageTransportOptions($package);
             }
