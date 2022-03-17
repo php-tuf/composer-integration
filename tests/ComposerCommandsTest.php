@@ -70,6 +70,9 @@ class ComposerCommandsTest extends TestCase
         (new Filesystem())
             ->removeDirectory(static::$projectDir . '/vendor');
 
+        static::composer('config', '--unset', 'repo.vendor');
+        unlink(static::$projectDir . '/vendor.json');
+
         parent::tearDownAfterClass();
     }
 
