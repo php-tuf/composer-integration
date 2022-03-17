@@ -3,10 +3,6 @@
     "description": "Demo of a secured root composer.json",
     "type": "project",
     "repositories": {
-        "vendor": {
-            "type": "composer",
-            "url": "file:///Users/phen/composer-integration/tests/../test-project/vendor.json"
-        },
         "fixture": {
             "type": "composer",
             "url": "http://localhost:8080",
