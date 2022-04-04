@@ -128,7 +128,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     /**
      * {@inheritDoc}
      */
-    protected function configurePackageTransportOptions(PackageInterface $package)
+    protected function configurePackageTransportOptions(PackageInterface $package): void
     {
         parent::configurePackageTransportOptions($package);
 

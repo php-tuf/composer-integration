@@ -128,7 +128,7 @@ class ApiTest extends TestCase
                 ];
             }
 
-            public function configurePackageTransportOptions(PackageInterface $package)
+            public function configurePackageTransportOptions(PackageInterface $package): void
             {
                 parent::configurePackageTransportOptions($package);
             }
