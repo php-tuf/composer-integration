@@ -55,7 +55,7 @@ class ComposerCommandsTest extends TestCase
         }
         $destination = static::$projectDir . '/vendor.json';
         file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        static::composer('config', 'repo.vendor', "file://$destination");
+        static::composer("config repo.vendor composer file://$destination");
 
         // Install the plugin.
         static::composer('require', 'php-tuf/composer-integration');
@@ -74,7 +74,7 @@ class ComposerCommandsTest extends TestCase
 
         // Remove the repository of installed vendor dependencies created by
         // ::setUpBeforeClass().
-        static::composer('config', '--unset', 'repo.vendor');
+        static::composer("config --unset repo.vendor");
         unlink(static::$projectDir . '/vendor.json');
 
         parent::tearDownAfterClass();
