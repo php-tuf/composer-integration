@@ -2,21 +2,18 @@
     "name": "php-tuf/example-composer-project",
     "description": "Demo of a secured root composer.json",
     "type": "project",
-    "repositories": [
-        {
+    "repositories": {
+        "fixture": {
             "type": "composer",
             "url": "http://localhost:8080",
             "tuf": true
         },
-        {
+        "plugin": {
             "type": "path",
             "url": "../"
         },
-        {
-            "type": "vcs",
-            "url": "https://github.com/php-tuf/php-tuf.git"
-        }
-    ],
+        "packagist.org": false
+    },
     "minimum-stability": "dev",
     "config": {
         "secure-http": false
