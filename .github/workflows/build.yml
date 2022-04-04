@@ -24,11 +24,9 @@ jobs:
           tools: 'composer:v2'
       - name: Install dependencies
         run: 'composer install ${{ env.COMPOSER_FLAGS }}'
-      - name: Build TUF fixture
-        run: 'composer run make-fixture'
       - name: Start PHP server
         run: 'php -S localhost:8080 &'
-      - name: Run tests
+      - name: Build TUF fixture and run tests
         run: 'composer test'
 #      - name: Check dependencies for known security vulnerabilities
 #        run: 'composer security'

@@ -5,7 +5,6 @@ import os
 import shutil
 
 from os import path
-from unittest import mock
 
 # This file largely derives from:
 # https://github.com/php-tuf/php-tuf/blob/main/generate_fixtures.py
@@ -21,7 +20,6 @@ def import_keypair(name):
 
     return (public, private)
 
-# @mock.patch('time.time', mock.MagicMock(return_value=1577836800))
 def generate_fixture():
     dir = os.getcwd()
 
