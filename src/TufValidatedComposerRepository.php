@@ -54,6 +54,8 @@ class TufValidatedComposerRepository extends ComposerRepository
             // put all signed files into /targets, so ensure that all downloads are
             // prefixed with that.
             $repoConfig['url'] = "$url/targets";
+
+            $io->debug("Packages from $url are verified by TUF with base URL " . $repoConfig['url']);
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
