@@ -25,7 +25,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "composer-plugin-api": "^2.0",
+        "composer-plugin-api": "^2.1",
         "php-tuf/php-tuf": "dev-main"
     },
     "conflict": {
@@ -40,7 +40,7 @@
         "class": "Tuf\\ComposerIntegration\\Plugin"
     },
     "require-dev": {
-        "composer/composer": "dev-main",
+        "composer/composer": "^2.1",
         "phpunit/phpunit": "^9.5",
         "phpspec/prophecy-phpunit": "^2.0",
         "roave/security-advisories": "dev-latest"
