@@ -59,5 +59,10 @@
             "ln -s -f ./targets/packages.json ."
         ],
         "test": "phpunit ./tests"
+    },
+    "config": {
+        "platform": {
+            "php": "7.3.0"
+        }
     }
 }
