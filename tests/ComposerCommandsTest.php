@@ -27,6 +27,36 @@ class ComposerCommandsTest extends TestCase
 
         // Ensure that static::composer() runs in the correct directory.
         static::$projectDir = __DIR__ . '/../test-project';
+
+        // Create a Composer repository with all the installed vendor
+        // dependencies, so that the test project doesn't need to interact
+        // with the internet.
+        $lock = __DIR__ . '/../composer.lock';
+        static::assertFileIsReadable($lock);
+        $lock = file_get_contents($lock);
+        $lock = json_decode($lock, true);
+        $vendor = [];
+        $packages = array_merge($lock['packages'], $lock['packages-dev']);
+        foreach ($packages as $package) {
+            $name = $package['name'];
+            $dir = __DIR__ . '/../vendor/' . $name;
+            if (is_dir($dir)) {
+                $version = $package['version'];
+                $vendor['packages'][$name][$version] = [
+                    'name' => $name,
+                    'version' => $version,
+                    'type' => $package['type'],
+                    'dist' => [
+                        'type' => 'path',
+                        'url' => $dir,
+                    ],
+                ];
+            }
+        }
+        $destination = static::$projectDir . '/vendor.json';
+        file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        static::composer('config', 'repo.vendor', "file://$destination");
+
         // Install the plugin.
         static::composer('require', 'php-tuf/composer-integration');
     }
@@ -41,6 +71,11 @@ class ComposerCommandsTest extends TestCase
         // Delete the vendor directory.
         (new Filesystem())
             ->removeDirectory(static::$projectDir . '/vendor');
+
+        // Remove the repository of installed vendor dependencies created by
+        // ::setUpBeforeClass().
+        static::composer('config', '--unset', 'repo.vendor');
+        unlink(static::$projectDir . '/vendor.json');
 
         parent::tearDownAfterClass();
     }
