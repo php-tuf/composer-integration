@@ -47,7 +47,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 GuzzleFileFetcher::createFromUri($url),
                 [],
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-                $this->initializeStorage($url, $config)
+                $this->initializeStorage($url, $config, $io)
             );
 
             // The Python tool (which generates the server-side TUF repository) will
@@ -70,6 +70,8 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The repository URL.
      * @param Config $config
      *   The Composer configuration.
+     * @param IOInterface $io
+     *   The I/O wrapper.
      *
      * @return \ArrayAccess
      *   A durable storage object for this repository's TUF data.
@@ -77,7 +79,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      * @throws \RuntimeException
      *   If no root metadata could be found for this repository.
      */
-    private function initializeStorage(string $url, Config $config): \ArrayAccess
+    private function initializeStorage(string $url, Config $config, IOInterface $io): \ArrayAccess
     {
         $storage = ComposerFileStorage::create($url, $config);
 
@@ -86,6 +88,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         if (!isset($storage['root.json'])) {
             $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
             if ($initialRootMetadataPath) {
+                $io->debug("TUF root metadata for $url was loaded from $initialRootMetadataPath.");
                 $storage['root.json'] = file_get_contents($initialRootMetadataPath);
             } else {
                 throw new \RuntimeException("No TUF root metadata was found for repository $url.");
