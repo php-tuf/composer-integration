@@ -21,7 +21,7 @@ def import_keypair(name):
 
     return (public, private)
 
-@mock.patch('time.time', mock.MagicMock(return_value=1577836800))
+# @mock.patch('time.time', mock.MagicMock(return_value=1577836800))
 def generate_fixture():
     dir = os.getcwd()
 
