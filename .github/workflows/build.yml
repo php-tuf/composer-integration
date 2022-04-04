@@ -28,5 +28,3 @@ jobs:
         run: 'php -S localhost:8080 &'
       - name: Build TUF fixture and run tests
         run: 'composer test'
-      - name: Check dependencies for known security vulnerabilities
-        run: 'composer security'
