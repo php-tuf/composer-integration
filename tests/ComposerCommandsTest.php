@@ -85,12 +85,17 @@ class ComposerCommandsTest extends TestCase
      *
      * @param string ...$command
      *   The arguments to pass to Composer.
+     *
+     * @return Process
+     *   The process object.
      */
-    private static function composer(string ...$command): void
+    private static function composer(string ...$command): Process
     {
         array_unshift($command, __DIR__ . '/../vendor/composer/composer/bin/composer');
         $process = new Process($command, static::$projectDir);
         static::assertSame(0, $process->mustRun()->getExitCode());
+
+        return $process;
     }
 
     /**
@@ -122,7 +127,10 @@ class ComposerCommandsTest extends TestCase
     {
         $package = 'drupal/token';
         $this->assertPackageNotInstalled($package);
-        $this->composer('require', $package, '--with-all-dependencies');
+
+        $process = $this->composer('require', $package, '--with-all-dependencies', '-vvv');
+        $this->assertStringContainsString('TUF integration enabled.', $process->getOutput());
+
         $this->assertPackageInstalled($package);
         $this->composer('remove', $package);
         $this->assertPackageNotInstalled($package);
