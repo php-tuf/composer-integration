@@ -131,7 +131,7 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', $package, '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('Packages from http://localhost:8080 are verified by TUF with base URL http://localhost:8080/targets.', $debug);
+        $this->assertStringContainsString('Packages from http://localhost:8080 are verified by TUF with base URL http://localhost:8080/targets', $debug);
 
         $this->assertPackageInstalled($package);
         $this->composer('remove', $package);
