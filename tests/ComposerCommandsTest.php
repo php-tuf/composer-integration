@@ -129,7 +129,7 @@ class ComposerCommandsTest extends TestCase
         $this->assertPackageNotInstalled($package);
 
         $process = $this->composer('require', $package, '--with-all-dependencies', '-vvv');
-        $this->assertStringContainsString('TUF integration enabled.', $process->getOutput());
+        $this->assertStringContainsString('TUF integration enabled.', $process->getErrorOutput());
 
         $this->assertPackageInstalled($package);
         $this->composer('remove', $package);
