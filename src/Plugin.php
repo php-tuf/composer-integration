@@ -25,6 +25,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     private $repositoryManager;
 
     /**
+     * The I/O wrapper.
+     *
+     * @var IOInterface
+     */
+    private $io;
+
+    /**
      * {@inheritDoc}
      */
     public static function getSubscribedEvents()
@@ -49,7 +56,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $context = $event->getContext();
 
         if ($event->getType() === 'metadata' && $context['repository'] instanceof TufValidatedComposerRepository) {
-            $context['repository']->prepareMetadata($event);
+            $context['repository']->prepareMetadata($event, $this->io);
         }
     }
 
@@ -114,6 +121,9 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     public function activate(Composer $composer, IOInterface $io)
     {
         $io->debug('TUF integration enabled.');
+        // Keep a reference to the I/O wrapper so we can set debugging messages
+        // at other points.
+        $this->io = $io;
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to

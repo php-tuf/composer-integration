@@ -186,8 +186,10 @@ class TufValidatedComposerRepository extends ComposerRepository
      *
      * @param PreFileDownloadEvent $event
      *   The event object.
+     * @param IOInterface $io
+     *   The I/O wrapper.
      */
-    public function prepareMetadata(PreFileDownloadEvent $event): void
+    public function prepareMetadata(PreFileDownloadEvent $event, IOInterface $io): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($event->getProcessedUrl());
@@ -210,6 +212,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $options['max_file_size'] = static::MAX_404_BYTES;
             }
             $event->setTransportOptions($options);
+            $io->debug("TUF constrained the download size for Composer metadata '$target' to " . $options['max_file_size'] . ' bytes.');
         }
     }
 
