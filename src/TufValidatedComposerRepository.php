@@ -223,12 +223,15 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The URL from which the metadata was downloaded.
      * @param Response $response
      *   The HTTP response for the downloaded metadata.
+     * @param IOInterface $io
+     *   The I/O wrapper.
      */
-    public function validateMetadata(string $url, Response $response): void
+    public function validateMetadata(string $url, Response $response, IOInterface $io): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
+            $io->debug("TUF successfully validated Composer metadata '$target'.");
         }
     }
 

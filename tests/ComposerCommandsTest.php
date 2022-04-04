@@ -134,6 +134,7 @@ class ComposerCommandsTest extends TestCase
         $this->assertStringContainsString('TUF root metadata for http://localhost:8080 was loaded from ', $debug);
         $this->assertStringContainsString('Packages from http://localhost:8080 are verified by TUF with base URL http://localhost:8080/targets', $debug);
         $this->assertStringContainsString("TUF constrained the download size for Composer metadata 'packages.json' to 137 bytes.", $debug);
+        $this->assertStringContainsString("TUF successfully validated Composer metadata 'packages.json'.", $debug);
 
         $this->assertPackageInstalled($package);
         $this->composer('remove', $package);

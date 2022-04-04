@@ -77,7 +77,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
         if ($type === 'metadata') {
             if ($context['repository'] instanceof TufValidatedComposerRepository) {
-                $context['repository']->validateMetadata($event->getUrl(), $context['response']);
+                $context['repository']->validateMetadata($event->getUrl(), $context['response'], $this->io);
             }
         } elseif ($type === 'package') {
             // The repository URL is saved in the package's transport options so that
