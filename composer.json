@@ -1,13 +1,8 @@
 {
     "name": "php-tuf/composer-integration",
-    "description": "POC. Explorations in securing Composer with php-tuf.",
+    "description": "Proof of concept of securing Composer downloads with PHP-TUF.",
     "type": "composer-plugin",
     "repositories": [
-        {
-            "type": "composer",
-            "url": "https://packagist.org",
-            "tuf-url": "https://whatever.com/tuf"
-        },
         {
             "type": "vcs",
             "url": "https://github.com/php-tuf/php-tuf.git"
@@ -20,16 +15,14 @@
             "email": "mike@mbaynton.com"
         },
         {
-            "name": "Please add/edit over time as appropriate"
+            "name": "Adam Globus-Hoenich",
+            "email": "adam@phenaproxima.net"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "composer-plugin-api": "^2.1",
         "php-tuf/php-tuf": "dev-main"
-    },
-    "conflict": {
-        "zaporylie/composer-drupal-optimizations": "*"
     },
     "autoload": {
         "psr-4": {
