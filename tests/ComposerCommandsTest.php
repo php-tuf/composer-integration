@@ -88,7 +88,8 @@ class ComposerCommandsTest extends TestCase
      */
     private static function composer(string ...$command): void
     {
-        array_unshift($command, __DIR__ . '/../vendor/composer/composer/bin/composer');
+        // Ensure the current PHP runtime is used to execute Composer.
+        array_unshift($command, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
         $process = new Process($command, static::$projectDir);
         static::assertSame(0, $process->mustRun()->getExitCode());
     }
