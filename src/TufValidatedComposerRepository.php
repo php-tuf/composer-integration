@@ -84,7 +84,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         $storage = ComposerFileStorage::create($url, $config);
 
         if (isset($storage['root.json'])) {
-            $io->debug("TUF root metadata for $url was loaded from persistent storage.");
+            $io->debug("[TUF] Root metadata for $url loaded from persistent storage.");
         } else {
             // If the durable storage doesn't have any root metadata, copy the initial
             // root metadata into it.
