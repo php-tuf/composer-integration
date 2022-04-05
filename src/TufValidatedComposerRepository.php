@@ -55,7 +55,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             // prefixed with that.
             $repoConfig['url'] = "$url/targets";
 
-            $io->debug("Packages from $url are verified by TUF with base URL " . $repoConfig['url']);
+            $io->debug("[TUF] Packages from $url are verified with base URL " . $repoConfig['url']);
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
@@ -90,7 +90,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             // root metadata into it.
             $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
             if ($initialRootMetadataPath) {
-                $io->debug("TUF root metadata for $url was loaded from $initialRootMetadataPath.");
+                $io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
                 $storage['root.json'] = file_get_contents($initialRootMetadataPath);
             } else {
                 throw new \RuntimeException("No TUF root metadata was found for repository $url.");
@@ -212,7 +212,8 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $options['max_file_size'] = static::MAX_404_BYTES;
             }
             $event->setTransportOptions($options);
-            $io->debug("TUF constrained the download size for Composer metadata '$target' to " . $options['max_file_size'] . ' bytes.');
+
+            $io->debug("[TUF] Target '$target' limited to " . $options['max_file_size'] . ' bytes.');
         }
     }
 
@@ -231,7 +232,8 @@ class TufValidatedComposerRepository extends ComposerRepository
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
-            $io->debug("TUF successfully validated Composer metadata '$target'.");
+
+            $io->debug("[TUF] Target '$target' validated.");
         }
     }
 
@@ -242,13 +244,17 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The downloaded package.
      * @param string $filename
      *   The local path of the downloaded file.
+     * @param IOInterface $io
+     *   The I/O wrapper.
      */
-    public function validatePackage(PackageInterface $package, string $filename): void
+    public function validatePackage(PackageInterface $package, string $filename, IOInterface $io): void
     {
         if ($this->isTufEnabled()) {
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
+
+            $io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
         }
     }
 }

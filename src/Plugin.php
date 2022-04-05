@@ -87,7 +87,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             if (array_key_exists('tuf', $options)) {
                 $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
                 if ($repository) {
-                    $repository->validatePackage($context, $event->getFileName());
+                    $repository->validatePackage($context, $event->getFileName(), $this->io);
                 }
             }
         }

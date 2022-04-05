@@ -2,9 +2,13 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
+use Composer\Json\JsonFile;
+use Composer\Package\PackageInterface;
+use Composer\Repository\FilesystemRepository;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
+use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
 /**
  * Tests TUF protection when using Composer in an example project.
@@ -131,12 +135,33 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', $package, '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('TUF root metadata for http://localhost:8080 was loaded from ', $debug);
-        $this->assertStringContainsString('Packages from http://localhost:8080 are verified by TUF with base URL http://localhost:8080/targets', $debug);
-        $this->assertStringContainsString("TUF constrained the download size for Composer metadata 'packages.json' to 137 bytes.", $debug);
-        $this->assertStringContainsString("TUF successfully validated Composer metadata 'packages.json'.", $debug);
+        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
+        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified with base URL http://localhost:8080/targets', $debug);
+        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 137 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1378 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' validated.", $debug);
+        // This target doesn't exist, so it is limited to a hard-coded maximum number of bytes, and
+        // there should not be a message saying that it was validated.
+        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
+        $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token/1.9.0.0' validated.", $debug);
 
         $this->assertPackageInstalled($package);
+
+        // Load the locked package to ensure that the TUF information was saved.
+        // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
+        $lock = static::$projectDir . '/composer.lock';
+        $this->assertFileIsReadable($lock);
+        $lock = new JsonFile($lock);
+        $lock = new FilesystemRepository($lock);
+        $locked_package = $lock->findPackage($package, '*');
+        $this->assertInstanceOf(PackageInterface::class, $locked_package);
+        $transport_options = $locked_package->getTransportOptions();
+        $this->assertSame('http://localhost:8080/targets', $transport_options['tuf']['repository']);
+        $this->assertSame('drupal/token/1.9.0.0', $transport_options['tuf']['target']);
+        $this->assertNotEmpty($transport_options['max_file_size']);
+
         $this->composer('remove', $package);
         $this->assertPackageNotInstalled($package);
     }
