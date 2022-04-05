@@ -25,13 +25,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     private $repositoryManager;
 
     /**
-     * The I/O wrapper.
-     *
-     * @var IOInterface
-     */
-    private $io;
-
-    /**
      * {@inheritDoc}
      */
     public static function getSubscribedEvents()
@@ -56,7 +49,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $context = $event->getContext();
 
         if ($event->getType() === 'metadata' && $context['repository'] instanceof TufValidatedComposerRepository) {
-            $context['repository']->prepareMetadata($event, $this->io);
+            $context['repository']->prepareMetadata($event);
         }
     }
 
@@ -77,7 +70,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
         if ($type === 'metadata') {
             if ($context['repository'] instanceof TufValidatedComposerRepository) {
-                $context['repository']->validateMetadata($event->getUrl(), $context['response'], $this->io);
+                $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
             // The repository URL is saved in the package's transport options so that
@@ -87,7 +80,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
             if (array_key_exists('tuf', $options)) {
                 $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
                 if ($repository) {
-                    $repository->validatePackage($context, $event->getFileName(), $this->io);
+                    $repository->validatePackage($context, $event->getFileName());
                 }
             }
         }
@@ -121,9 +114,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     public function activate(Composer $composer, IOInterface $io)
     {
         $io->debug('TUF integration enabled.');
-        // Keep a reference to the I/O wrapper so we can set debugging messages
-        // at other points.
-        $this->io = $io;
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to

@@ -36,10 +36,18 @@ class TufValidatedComposerRepository extends ComposerRepository
     private $updater;
 
     /**
+     * The I/O wrapper.
+     *
+     * @var IOInterface
+     */
+    private $io;
+
+    /**
      * {@inheritDoc}
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
+        $this->io = $io;
         $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
@@ -47,7 +55,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 GuzzleFileFetcher::createFromUri($url),
                 [],
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-                $this->initializeStorage($url, $config, $io)
+                $this->initializeStorage($url, $config)
             );
 
             // The Python tool (which generates the server-side TUF repository) will
@@ -70,8 +78,6 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The repository URL.
      * @param Config $config
      *   The Composer configuration.
-     * @param IOInterface $io
-     *   The I/O wrapper.
      *
      * @return \ArrayAccess
      *   A durable storage object for this repository's TUF data.
@@ -79,18 +85,18 @@ class TufValidatedComposerRepository extends ComposerRepository
      * @throws \RuntimeException
      *   If no root metadata could be found for this repository.
      */
-    private function initializeStorage(string $url, Config $config, IOInterface $io): \ArrayAccess
+    private function initializeStorage(string $url, Config $config): \ArrayAccess
     {
         $storage = ComposerFileStorage::create($url, $config);
 
         if (isset($storage['root.json'])) {
-            $io->debug("[TUF] Root metadata for $url loaded from persistent storage.");
+            $this->io->debug("[TUF] Root metadata for $url loaded from persistent storage.");
         } else {
             // If the durable storage doesn't have any root metadata, copy the initial
             // root metadata into it.
             $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
             if ($initialRootMetadataPath) {
-                $io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
+                $this->io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
                 $storage['root.json'] = file_get_contents($initialRootMetadataPath);
             } else {
                 throw new \RuntimeException("No TUF root metadata was found for repository $url.");
@@ -186,10 +192,8 @@ class TufValidatedComposerRepository extends ComposerRepository
      *
      * @param PreFileDownloadEvent $event
      *   The event object.
-     * @param IOInterface $io
-     *   The I/O wrapper.
      */
-    public function prepareMetadata(PreFileDownloadEvent $event, IOInterface $io): void
+    public function prepareMetadata(PreFileDownloadEvent $event): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($event->getProcessedUrl());
@@ -213,7 +217,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             }
             $event->setTransportOptions($options);
 
-            $io->debug("[TUF] Target '$target' limited to " . $options['max_file_size'] . ' bytes.');
+            $this->io->debug("[TUF] Target '$target' limited to " . $options['max_file_size'] . ' bytes.');
         }
     }
 
@@ -224,16 +228,14 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The URL from which the metadata was downloaded.
      * @param Response $response
      *   The HTTP response for the downloaded metadata.
-     * @param IOInterface $io
-     *   The I/O wrapper.
      */
-    public function validateMetadata(string $url, Response $response, IOInterface $io): void
+    public function validateMetadata(string $url, Response $response): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
 
-            $io->debug("[TUF] Target '$target' validated.");
+            $this->io->debug("[TUF] Target '$target' validated.");
         }
     }
 
@@ -244,17 +246,15 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The downloaded package.
      * @param string $filename
      *   The local path of the downloaded file.
-     * @param IOInterface $io
-     *   The I/O wrapper.
      */
-    public function validatePackage(PackageInterface $package, string $filename, IOInterface $io): void
+    public function validatePackage(PackageInterface $package, string $filename): void
     {
         if ($this->isTufEnabled()) {
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
 
-            $io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
+            $this->io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
         }
     }
 }
