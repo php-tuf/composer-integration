@@ -66,16 +66,15 @@ class ComposerCommandsTest extends TestCase
      */
     public static function tearDownAfterClass(): void
     {
-        // Revert changes to composer.json.
+        // Revert changes to composer.json made by ::setUpBeforeClass().
         static::composer('remove', 'php-tuf/composer-integration', '--no-update');
-        // Delete the vendor directory.
-        (new Filesystem())
-            ->removeDirectory(static::$projectDir . '/vendor');
-
-        // Remove the repository of installed vendor dependencies created by
-        // ::setUpBeforeClass().
         static::composer('config', '--unset', 'repo.vendor');
-        unlink(static::$projectDir . '/vendor.json');
+
+        // Delete files and directories created during the test.
+        $file_system = new Filesystem();
+        foreach (['vendor', 'composer.lock', 'vendor.json'] as $file) {
+            $file_system->remove(static::$projectDir . '/' . $file);
+        }
 
         parent::tearDownAfterClass();
     }
