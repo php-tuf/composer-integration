@@ -82,4 +82,4 @@ jobs:
       - name: Build TUF fixture and run tests
         run: vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities
-        run: 'composer security'
+        run: 'composer audit'
