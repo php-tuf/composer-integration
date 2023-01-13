@@ -22,6 +22,8 @@ jobs:
         with:
           php-version: 7.3
           tools: 'composer:v2'
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
         run: 'composer install ${{ env.COMPOSER_FLAGS }}'
       - name: Start PHP server
