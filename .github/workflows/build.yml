@@ -57,9 +57,14 @@ jobs:
           retention-days: 5
 
   test:
-    name: Run tests
+    name: Run tests on ${{ matrix.operating-system }}
     needs: fixture
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        operating-system: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v2
       - name: Install PHP and Composer 2
