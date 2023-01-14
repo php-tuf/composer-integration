@@ -36,8 +36,7 @@
     "require-dev": {
         "composer/composer": "^2.1",
         "phpunit/phpunit": "^9.5",
-        "phpspec/prophecy-phpunit": "^2.0",
-        "roave/security-advisories": "dev-latest"
+        "phpspec/prophecy-phpunit": "^2.0"
     },
     "scripts": {
         "make-fixture": [
@@ -52,7 +51,6 @@
             "cp -f ./vendor/php-tuf/php-tuf/Pipfile* .",
             "ln -s -f ./targets/packages.json ."
         ],
-        "security": "@composer update --dry-run roave/security-advisories",
         "test": [
             "@composer make-fixture",
             "phpunit ./tests --debug"
