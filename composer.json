@@ -22,7 +22,8 @@
     "minimum-stability": "stable",
     "require": {
         "composer-plugin-api": "^2.1",
-        "php-tuf/php-tuf": "dev-main"
+        "php-tuf/php-tuf": "dev-main",
+        "guzzlehttp/guzzle": "^6.5 || ^7.2"
     },
     "autoload": {
         "psr-4": {
