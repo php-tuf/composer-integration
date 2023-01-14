@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - uses: actions/checkout@v2
         with:
           repository: php-tuf/php-tuf
@@ -67,6 +69,8 @@ jobs:
         operating-system: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
       - name: Install PHP and Composer 2
         uses: shivammathur/setup-php@v2
         with:
