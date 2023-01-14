@@ -52,7 +52,11 @@ class ComposerCompatibleUpdater extends Updater
 
         $metadata = $this->getMetadataForTarget($target);
         if ($metadata) {
-            return $metadata->getLength($target);
+            // We need to add 1 to the maximum file size returned by TUF because
+            // if we actually download the expected number of bytes, Composer
+            // will mistakenly think we have exceeded the maximum size, and
+            // throw an exception.
+            return $metadata->getLength($target) + 1;
         } else {
             throw new NotFoundException($target, 'Target');
         }
