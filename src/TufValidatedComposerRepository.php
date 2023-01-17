@@ -184,7 +184,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     {
         $config = $this->getRepoConfig();
         $target = str_replace($config['url'], '', $url);
-        return ltrim($target, '/');
+        return urldecode(ltrim($target, '/'));
     }
 
     /**

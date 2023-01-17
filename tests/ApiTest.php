@@ -208,9 +208,46 @@ class ApiTest extends TestCase
     }
 
     /**
-     * @covers ::preFileDownload
+     * Data provider for ::testPreFileDownload().
+     *
+     * @return array[]
+     *   The test cases.
      */
-    public function testPreFileDownload(): void
+    public function providerPreFileDownload(): array {
+        return [
+            'legitimate target' => [
+                'packages.json',
+                99,
+                99,
+            ],
+            'unknown target' => [
+                'bogus.json',
+                NULL,
+                TufValidatedComposerRepository::MAX_404_BYTES,
+            ],
+            'URL-encoded target' => [
+                'all$random-hash.json',
+                999,
+                999,
+            ]
+        ];
+    }
+
+    /**
+     * @covers ::preFileDownload
+     *
+     * @param string $filename
+     *   The filename of the target, as known in the processed URL, relative to
+     *   the `targets` directory.
+     * @param int|null $known_size
+     *   Either a file size that will be returned by TUF, or NULL if the target
+     *   is not known to TUF.
+     * @param int $expected_size
+     *   The maximum file size that Composer should end up with.
+     *
+     * @dataProvider providerPreFileDownload
+     */
+    public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
     {
         $url = 'http://localhost:8080';
         $eventDispatcher = $this->composer->getEventDispatcher();
@@ -220,18 +257,18 @@ class ApiTest extends TestCase
             'url' => $url,
         ]);
 
-        $updater->getLength('packages.json')
-            ->willReturn(1024)
-            ->shouldBeCalled();
-        $updater->getLength('bogus.json')
-            ->willThrow('\Tuf\Exception\NotFoundException')
-            ->shouldBeCalled();
+        $method = $updater->getLength(urldecode($filename))->shouldBeCalled();
+        if (isset($known_size)) {
+            $method->willReturn($known_size);
+        } else {
+            $method->willThrow('\Tuf\Exception\NotFoundException');
+        }
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            "$url/targets/packages.json",
+            "$url/targets/" . urlencode($filename),
             'metadata',
             [
                 'repository' => $repository,
@@ -239,22 +276,7 @@ class ApiTest extends TestCase
         );
         $eventDispatcher->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
-        $this->assertSame(1024, $options['max_file_size']);
-
-        // If the target is unknown, the default maximum length should end up in
-        // the transport options.
-        $event = new PreFileDownloadEvent(
-            PluginEvents::PRE_FILE_DOWNLOAD,
-            $this->composer->getLoop()->getHttpDownloader(),
-            "$url/targets/bogus.json",
-            'metadata',
-            [
-                'repository' => $repository,
-            ]
-        );
-        $eventDispatcher->dispatch($event->getName(), $event);
-        $options = $event->getTransportOptions();
-        $this->assertSame(TufValidatedComposerRepository::MAX_404_BYTES, $options['max_file_size']);
+        $this->assertSame($expected_size, $options['max_file_size']);
     }
 
     /**
