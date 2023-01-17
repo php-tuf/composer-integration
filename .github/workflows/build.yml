@@ -97,6 +97,9 @@ jobs:
         run: |
           php -S localhost:8080 &
           vendor/bin/phpunit ./tests --debug
+      - name: Check dependencies for known security vulnerabilities (legacy)
+        if: matrix.composer == 2.2
+        run: composer require --update-with-all-dependencies roave/security-advisories:dev-latest
       - name: Check dependencies for known security vulnerabilities
         if: matrix.composer == 2
         run: 'composer audit'
