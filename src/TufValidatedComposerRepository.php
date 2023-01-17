@@ -36,10 +36,18 @@ class TufValidatedComposerRepository extends ComposerRepository
     private $updater;
 
     /**
+     * The I/O wrapper.
+     *
+     * @var IOInterface
+     */
+    private $io;
+
+    /**
      * {@inheritDoc}
      */
     public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
     {
+        $this->io = $io;
         $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
@@ -54,6 +62,8 @@ class TufValidatedComposerRepository extends ComposerRepository
             // put all signed files into /targets, so ensure that all downloads are
             // prefixed with that.
             $repoConfig['url'] = "$url/targets";
+
+            $io->debug("[TUF] Packages from $url are verified with base URL " . $repoConfig['url']);
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
@@ -79,11 +89,14 @@ class TufValidatedComposerRepository extends ComposerRepository
     {
         $storage = ComposerFileStorage::create($url, $config);
 
-        // If the durable storage doesn't have any root metadata, copy the initial
-        // root metadata into it.
-        if (!isset($storage['root.json'])) {
+        if (isset($storage['root.json'])) {
+            $this->io->debug("[TUF] Root metadata for $url loaded from persistent storage.");
+        } else {
+            // If the durable storage doesn't have any root metadata, copy the initial
+            // root metadata into it.
             $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
             if ($initialRootMetadataPath) {
+                $this->io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
                 $storage['root.json'] = file_get_contents($initialRootMetadataPath);
             } else {
                 throw new \RuntimeException("No TUF root metadata was found for repository $url.");
@@ -203,6 +216,8 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $options['max_file_size'] = static::MAX_404_BYTES;
             }
             $event->setTransportOptions($options);
+
+            $this->io->debug("[TUF] Target '$target' limited to " . $options['max_file_size'] . ' bytes.');
         }
     }
 
@@ -219,6 +234,8 @@ class TufValidatedComposerRepository extends ComposerRepository
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
+
+            $this->io->debug("[TUF] Target '$target' validated.");
         }
     }
 
@@ -236,6 +253,8 @@ class TufValidatedComposerRepository extends ComposerRepository
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
+
+            $this->io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
         }
     }
 }
