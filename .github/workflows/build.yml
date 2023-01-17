@@ -65,7 +65,7 @@ jobs:
           retention-days: 5
 
   test:
-    name: Run tests on ${{ matrix.operating-system }}
+    name: Run tests on ${{ matrix.operating-system }} with Composer ${{ matrix.composer }}
     needs: fixture
     runs-on: ${{ matrix.operating-system }}
     strategy:
@@ -73,6 +73,7 @@ jobs:
       max-parallel: 10
       matrix:
         operating-system: [ubuntu-latest, macos-latest, windows-latest]
+        composer: [2, 2.2]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -81,7 +82,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 7.3
-          tools: 'composer:v2'
+          tools: composer:v${{ matrix.composer }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
@@ -96,5 +97,9 @@ jobs:
         run: |
           php -S localhost:8080 &
           vendor/bin/phpunit ./tests --debug
+      - name: Check dependencies for known security vulnerabilities (legacy)
+        if: matrix.composer == 2.2
+        run: composer require --update-with-all-dependencies roave/security-advisories:dev-latest
       - name: Check dependencies for known security vulnerabilities
+        if: matrix.composer == 2
         run: 'composer audit'
