@@ -94,7 +94,8 @@ class ComposerCommandsTest extends TestCase
      */
     private static function composer(string ...$command): Process
     {
-        array_unshift($command, __DIR__ . '/../vendor/composer/composer/bin/composer');
+        // Ensure the current PHP runtime is used to execute Composer.
+        array_unshift($command, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
         // Always run in very, very verbose mode.
         $command[] = '-vvv';
 
@@ -104,10 +105,6 @@ class ComposerCommandsTest extends TestCase
         // There should not be any deprecation warnings.
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
-        // Ensure the current PHP runtime is used to execute Composer.
-        array_unshift($command, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
-        $process = new Process($command, static::$projectDir);
-        static::assertSame(0, $process->mustRun()->getExitCode());
 
         return $process;
     }
