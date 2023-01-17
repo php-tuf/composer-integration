@@ -85,8 +85,6 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: composer:v${{ matrix.composer }}
           extensions: sodium, json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
         run: |
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
