@@ -98,4 +98,5 @@ jobs:
           php -S localhost:8080 &
           vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities
+        if: matrix.composer == 2
         run: 'composer audit'
