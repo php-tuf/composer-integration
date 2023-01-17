@@ -31,16 +31,16 @@ class TufValidatedComposerRepository extends ComposerRepository
     /**
      * The TUF updater, if any, for this repository.
      *
-     * @var ComposerCompatibleUpdater
+     * @var ComposerCompatibleUpdater|null
      */
-    private $updater;
+    private ?ComposerCompatibleUpdater $updater = NULL;
 
     /**
      * The I/O wrapper.
      *
      * @var IOInterface
      */
-    private $io;
+    private IOInterface $io;
 
     /**
      * {@inheritDoc}

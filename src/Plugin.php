@@ -22,12 +22,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      *
      * @var RepositoryManager
      */
-    private $repositoryManager;
+    private RepositoryManager $repositoryManager;
 
     /**
      * {@inheritDoc}
      */
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [
             PluginEvents::PRE_FILE_DOWNLOAD => ['preFileDownload', -1000],
@@ -111,7 +111,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * {@inheritDoc}
      */
-    public function activate(Composer $composer, IOInterface $io)
+    public function activate(Composer $composer, IOInterface $io): void
     {
         $io->debug('TUF integration enabled.');
 
@@ -176,7 +176,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * {@inheritDoc}
      */
-    public function uninstall(Composer $composer, IOInterface $io)
+    public function uninstall(Composer $composer, IOInterface $io): void
     {
         $path = ComposerFileStorage::basePath($composer->getConfig());
         $io->info("Deleting TUF data in $path");
@@ -188,7 +188,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * {@inheritDoc}
      */
-    public function deactivate(Composer $composer, IOInterface $io)
+    public function deactivate(Composer $composer, IOInterface $io): void
     {
     }
 }
