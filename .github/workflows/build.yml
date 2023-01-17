@@ -65,7 +65,7 @@ jobs:
           retention-days: 5
 
   test:
-    name: Run tests on ${{ matrix.operating-system }}
+    name: Run tests on ${{ matrix.operating-system }} with Composer ${{ matrix.composer }}
     needs: fixture
     runs-on: ${{ matrix.operating-system }}
     strategy:
