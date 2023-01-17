@@ -86,10 +86,11 @@ jobs:
           tools: composer:v${{ matrix.composer }}
           extensions: sodium, json
         env:
-          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install dependencies
-        run: 'composer install ${{ env.COMPOSER_FLAGS }}'
+        run: |
+          composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+          composer install ${{ env.COMPOSER_FLAGS }}
       - name: Download fixture
         uses: actions/download-artifact@v3
         with:
