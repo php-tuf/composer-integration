@@ -1,6 +1,12 @@
 name: build
 on:
-  - push
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  schedule:
+    # Run this workflow at 4 AM UTC every day.
+    - cron: '0 4 * * *'
 env:
   COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader"
 jobs:
