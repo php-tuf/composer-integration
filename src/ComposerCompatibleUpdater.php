@@ -57,7 +57,8 @@ class ComposerCompatibleUpdater extends Updater
             // will mistakenly think we have exceeded the maximum size, and
             // throw an exception. The purpose of TUF confirming the file size
             // is to prevent infinite data attacks, but adding 1 byte to the
-            // expected size won't undermine that defense.
+            // expected size won't undermine that.
+            // @see https://theupdateframework.github.io/specification/v1.0.18/#file-formats-targets
             return $metadata->getLength($target) + 1;
         } else {
             throw new NotFoundException($target, 'Target');
