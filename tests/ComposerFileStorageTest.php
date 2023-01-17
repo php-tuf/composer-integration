@@ -12,7 +12,12 @@ use Tuf\ComposerIntegration\ComposerFileStorage;
  */
 class ComposerFileStorageTest extends TestCase
 {
-    private $vendorDir;
+    /**
+     * The vendor directory used for testing.
+     *
+     * @var string
+     */
+    private string $vendorDir;
 
     /**
      * {@inheritDoc}
