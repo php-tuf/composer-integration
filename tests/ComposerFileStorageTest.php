@@ -60,7 +60,10 @@ class ComposerFileStorageTest extends TestCase
     {
         $config = new Config();
 
-        $basePath = ComposerFileStorage::basePath($config);
+        $basePath = implode(DIRECTORY_SEPARATOR, [
+           ComposerFileStorage::basePath($config),
+            'https---example.net-packages',
+        ]);
         $this->assertDirectoryDoesNotExist($basePath);
 
         ComposerFileStorage::create('https://example.net/packages', $config);
