@@ -113,6 +113,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     public function activate(Composer $composer, IOInterface $io)
     {
+        $io->debug('TUF integration enabled.');
+
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
         // TUF-validated repositories. Unfortunately, the repository manager

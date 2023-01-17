@@ -1,5 +1,7 @@
 # PHP-TUF Composer Integration Plugin
 
+![build](https://github.com/php-tuf/composer-integration/actions/workflows/build.yml/badge.svg)
+
 Experimental Composer plugin marrying Composer 2.1 and later to [PHP-TUF](https://github.com/php-tuf/php-tuf).
 
 This plugin seeks to demonstrate adding TUF security to
@@ -8,7 +10,7 @@ This plugin seeks to demonstrate adding TUF security to
 
 ## IMPORTANT
 
-This plugin, as well as the PHP-TUF library it depends on, is in a pre-release state and is not considered a complete or secure implementation of the TUF framework. Additionally, this plugin requires Composer 2.1 or later, which has not yet been released.
+This plugin, as well as the PHP-TUF library it depends on, is in a pre-release state and is not considered a complete or secure implementation of the TUF framework.
 
 This plugin should currently only be used for testing, development and feedback. *Do NOT use in production for secure downloads!!*
 
