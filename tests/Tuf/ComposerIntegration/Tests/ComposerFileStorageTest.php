@@ -40,7 +40,12 @@ class ComposerFileStorageTest extends TestCase
     public function testBasePath(): void
     {
         $config = new Config();
-        $this->assertSame("$this->vendorDir/composer/tuf", ComposerFileStorage::basePath($config));
+        $expectedPath = implode(DIRECTORY_SEPARATOR, [
+           $this->vendorDir,
+           'composer',
+           'tuf',
+        ]);
+        $this->assertSame($expectedPath, ComposerFileStorage::basePath($config));
     }
 
     /**
@@ -50,7 +55,12 @@ class ComposerFileStorageTest extends TestCase
     public function testCreate(): void
     {
         $storage = TestComposerFileStorage::create('https://example.net/packages', new Config());
-        $expectedPath = "$this->vendorDir/composer/tuf/https---example.net-packages";
+        $expectedPath = implode(DIRECTORY_SEPARATOR, [
+            $this->vendorDir,
+            'composer',
+            'tuf',
+            'https---example.net-packages',
+        ]);
         $this->assertSame($expectedPath, $storage->basePath);
         $this->assertDirectoryExists($expectedPath);
     }
