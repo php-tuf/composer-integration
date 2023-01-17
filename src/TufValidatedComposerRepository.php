@@ -33,7 +33,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      *
      * @var ComposerCompatibleUpdater|null
      */
-    private ?ComposerCompatibleUpdater $updater;
+    private ?ComposerCompatibleUpdater $updater = NULL;
 
     /**
      * The I/O wrapper.
