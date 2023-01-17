@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration\Tests;
 use Composer\Config;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
-use Prophecy\PhpUnit\ProphecyTrait;
 use Tuf\ComposerIntegration\ComposerFileStorage;
 
 /**
@@ -13,8 +12,6 @@ use Tuf\ComposerIntegration\ComposerFileStorage;
  */
 class ComposerFileStorageTest extends TestCase
 {
-    use ProphecyTrait;
-
     private $vendorDir;
 
     /**
@@ -39,12 +36,12 @@ class ComposerFileStorageTest extends TestCase
      */
     public function testBasePath(): void
     {
-        $config = new Config();
         $expectedPath = implode(DIRECTORY_SEPARATOR, [
            $this->vendorDir,
            'composer',
            'tuf',
         ]);
+        $config = new Config();
         $this->assertSame($expectedPath, ComposerFileStorage::basePath($config));
     }
 
@@ -54,19 +51,18 @@ class ComposerFileStorageTest extends TestCase
      */
     public function testCreate(): void
     {
-        $storage = TestComposerFileStorage::create('https://example.net/packages', new Config());
+        $storage = ComposerFileStorage::create('https://example.net/packages', new Config());
         $expectedPath = implode(DIRECTORY_SEPARATOR, [
             $this->vendorDir,
             'composer',
             'tuf',
             'https---example.net-packages',
         ]);
-        $this->assertSame($expectedPath, $storage->basePath);
+
+        $property = new \ReflectionProperty($storage, 'basePath');
+        $property->setAccessible(true);
+
+        $this->assertSame($expectedPath, $property->getValue($storage));
         $this->assertDirectoryExists($expectedPath);
     }
-}
-
-class TestComposerFileStorage extends ComposerFileStorage
-{
-    public $basePath;
 }
