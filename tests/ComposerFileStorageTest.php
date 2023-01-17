@@ -53,21 +53,17 @@ class ComposerFileStorageTest extends TestCase
     /**
      * @covers ::__construct
      * @covers ::create
+     *
+     * @depends testBasePath
      */
     public function testCreate(): void
     {
-        $storage = ComposerFileStorage::create('https://example.net/packages', new Config());
-        $expectedPath = implode(DIRECTORY_SEPARATOR, [
-            $this->vendorDir,
-            'composer',
-            'tuf',
-            'https---example.net-packages',
-        ]);
+        $config = new Config();
 
-        $property = new \ReflectionProperty($storage, 'basePath');
-        $property->setAccessible(true);
+        $basePath = ComposerFileStorage::basePath($config);
+        $this->assertDirectoryDoesNotExist($basePath);
 
-        $this->assertSame($expectedPath, $property->getValue($storage));
-        $this->assertDirectoryExists($expectedPath);
+        ComposerFileStorage::create('https://example.net/packages', $config);
+        $this->assertDirectoryExists($basePath);
     }
 }
