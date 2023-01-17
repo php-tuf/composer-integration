@@ -65,7 +65,7 @@ jobs:
           retention-days: 5
 
   test:
-    name: Run tests on ${{ matrix.operating-system }} with Composer ${{ matrix.composer }}
+    name: Test on ${{ matrix.operating-system }} with Composer ${{ matrix.composer }} and PHP ${{ matrix.php }}
     needs: fixture
     runs-on: ${{ matrix.operating-system }}
     strategy:
@@ -73,6 +73,7 @@ jobs:
       max-parallel: 10
       matrix:
         operating-system: [ubuntu-latest, macos-latest, windows-latest]
+        php: ['8.0', '8.1', '8.2']
         composer: [2, 2.2]
     steps:
       - uses: actions/checkout@v2
@@ -81,12 +82,13 @@ jobs:
       - name: Install PHP and Composer 2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 7.3
+          php-version: ${{ matrix.php }}
           tools: composer:v${{ matrix.composer }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          extensions: sodium, json
       - name: Install dependencies
-        run: 'composer install ${{ env.COMPOSER_FLAGS }}'
+        run: |
+          composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+          composer install ${{ env.COMPOSER_FLAGS }}
       - name: Download fixture
         uses: actions/download-artifact@v3
         with:

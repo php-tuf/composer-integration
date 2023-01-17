@@ -139,9 +139,9 @@ class ComposerCommandsTest extends TestCase
         $this->assertStringContainsString('TUF integration enabled.', $debug);
         $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
         $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified with base URL http://localhost:8080/targets', $debug);
-        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 119 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1378 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1379 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' validated.", $debug);
         // token~dev.json doesn't exist, so the plugin will limit it to a hard-coded maximum
         // size, and there should not be a message saying that it was validated.
