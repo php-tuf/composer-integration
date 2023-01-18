@@ -51,9 +51,16 @@ class ComposerFileStorage extends FileStorage
      */
     public static function create(string $url, Config $config): self
     {
+        $escapedUrl = preg_replace('/[^[:alnum:]\.]/', '-', $url);
+        // Append a partial hash of the unescaped URL, to prevent URLs like
+        // `https://www.site.coop.info/packages` from colliding with
+        // `https://www.site.coop/info/packages`, whilst keeping the directory
+        // names easily distinguishable.
+        $hashedUrl = hash('sha256', $url);
+
         $basePath = implode(DIRECTORY_SEPARATOR, [
             static::basePath($config),
-            preg_replace('/[^[:alnum:]\.]/', '-', $url),
+            $escapedUrl . '-' . substr($hashedUrl, 0, 8),
         ]);
         return new static($basePath);
     }
