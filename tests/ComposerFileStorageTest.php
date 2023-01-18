@@ -55,9 +55,14 @@ class ComposerFileStorageTest extends TestCase
      */
     public function testEscapeUrl(): void
     {
-        $url = 'https://example.net/packages';
-        $hash = hash('sha256', $url);
-        $this->assertSame('https---example.net-packages-' . substr($hash, 0, 8), ComposerFileStorage::escapeUrl($url));
+        // Ensure that two very similar URLs are converted into unique, but
+        // readable, directory names.
+        $url1 = ComposerFileStorage::escapeUrl('https://site.coop/info/packages');
+        $url2 = ComposerFileStorage::escapeUrl('https://site.coop.info/packages');
+
+        $this->assertNotSame($url1, $url2);
+        $this->assertMatchesRegularExpression('/^https---site\.coop-info-packages-[a-z0-9]{8}$/', $url1);
+        $this->assertMatchesRegularExpression('/^https---site\.coop\.info-packages-[a-z0-9]{8}$/', $url2);
     }
 
     /**
