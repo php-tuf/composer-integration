@@ -51,6 +51,25 @@ class ComposerFileStorage extends FileStorage
      */
     public static function create(string $url, Config $config): self
     {
+        $basePath = implode(DIRECTORY_SEPARATOR, [
+            static::basePath($config),
+            static::escapeUrl($url),
+        ]);
+        return new static($basePath);
+    }
+
+    /**
+     * Converts a repository URL to a unique directory name.
+     *
+     * @param string $url
+     *   A repository URL.
+     *
+     * @return string
+     *   A version of the URL suitable to use as the name of the persistent
+     *   storage directory.
+     */
+    public static function escapeUrl(string $url): string
+    {
         $escapedUrl = preg_replace('/[^[:alnum:]\.]/', '-', $url);
         // Append a partial hash of the unescaped URL, to prevent URLs like
         // `https://www.site.coop.info/packages` from colliding with
@@ -58,10 +77,6 @@ class ComposerFileStorage extends FileStorage
         // names easily distinguishable.
         $hashedUrl = hash('sha256', $url);
 
-        $basePath = implode(DIRECTORY_SEPARATOR, [
-            static::basePath($config),
-            $escapedUrl . '-' . substr($hashedUrl, 0, 8),
-        ]);
-        return new static($basePath);
+        return $escapedUrl . '-' . substr($hashedUrl, 0, 8);
     }
 }

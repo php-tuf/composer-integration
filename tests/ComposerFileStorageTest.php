@@ -51,22 +51,34 @@ class ComposerFileStorageTest extends TestCase
     }
 
     /**
+     * @covers ::escapeUrl
+     */
+    public function testEscapeUrl(): void
+    {
+        $url = 'https://example.net/packages';
+        $hash = hash('sha256', $url);
+        $this->assertSame('https---example.net-packages-' . substr($hash, 0, 8), ComposerFileStorage::escapeUrl($url));
+    }
+
+    /**
      * @covers ::__construct
      * @covers ::create
      *
      * @depends testBasePath
+     * @depends testEscapeUrl
      */
     public function testCreate(): void
     {
+        $url = 'https://example.net/packages';
         $config = new Config();
 
         $basePath = implode(DIRECTORY_SEPARATOR, [
            ComposerFileStorage::basePath($config),
-            'https---example.net-packages',
+           ComposerFileStorage::escapeUrl($url),
         ]);
         $this->assertDirectoryDoesNotExist($basePath);
 
-        ComposerFileStorage::create('https://example.net/packages', $config);
+        ComposerFileStorage::create($url, $config);
         $this->assertDirectoryExists($basePath);
     }
 }
