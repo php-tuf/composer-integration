@@ -2,7 +2,7 @@
 
 ![build](https://github.com/php-tuf/composer-integration/actions/workflows/build.yml/badge.svg)
 
-Experimental Composer plugin marrying Composer 2.1 and later to [PHP-TUF](https://github.com/php-tuf/php-tuf).
+Experimental Composer plugin marrying Composer 2.2 and later to [PHP-TUF](https://github.com/php-tuf/php-tuf).
 
 This plugin seeks to demonstrate adding TUF security to
   * Composer's package discovery process when using Composer v2 package repositories.
