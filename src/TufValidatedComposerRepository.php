@@ -50,7 +50,7 @@ class TufValidatedComposerRepository extends ComposerRepository
         $this->io = $io;
         $url = rtrim($repoConfig['url'], '/');
 
-        if (isset($repoConfig['tuf'])) {
+        if (!empty($repoConfig['tuf'])) {
             $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
                 [],
