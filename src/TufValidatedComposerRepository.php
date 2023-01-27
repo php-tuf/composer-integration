@@ -13,6 +13,8 @@ use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Exception\NotFoundException;
+use Tuf\Metadata\RootMetadata;
+use Tuf\Metadata\StorageInterface;
 
 /**
  * Defines a Composer repository that is protected by TUF.
@@ -79,28 +81,30 @@ class TufValidatedComposerRepository extends ComposerRepository
      * @param Config $config
      *   The Composer configuration.
      *
-     * @return \ArrayAccess
+     * @return \Tuf\Metadata\StorageInterface
      *   A durable storage object for this repository's TUF data.
      *
      * @throws \RuntimeException
      *   If no root metadata could be found for this repository.
      */
-    private function initializeStorage(string $url, Config $config): \ArrayAccess
+    private function initializeStorage(string $url, Config $config): StorageInterface
     {
         $storage = ComposerFileStorage::create($url, $config);
 
-        if (isset($storage['root.json'])) {
+        try {
+            $storage->getRoot();
             $this->io->debug("[TUF] Root metadata for $url loaded from persistent storage.");
-        } else {
-            // If the durable storage doesn't have any root metadata, copy the initial
-            // root metadata into it.
+        } catch (\LogicException) {
+            // The durable storage doesn't have any root metadata, so copy the
+            // initial root metadata into it.
             $initialRootMetadataPath = $this->locateRootMetadata($url, $config);
-            if ($initialRootMetadataPath) {
-                $this->io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
-                $storage['root.json'] = file_get_contents($initialRootMetadataPath);
-            } else {
+            if (empty($initialRootMetadataPath)) {
                 throw new \RuntimeException("No TUF root metadata was found for repository $url.");
             }
+            $rootMetadata = file_get_contents($initialRootMetadataPath);
+            $rootMetadata = RootMetadata::createFromJson($rootMetadata)->trust();
+            $storage->save($rootMetadata);
+            $this->io->debug("[TUF] Root metadata for $url loaded from $initialRootMetadataPath.");
         }
         return $storage;
     }
