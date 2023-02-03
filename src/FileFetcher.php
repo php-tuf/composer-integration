@@ -2,12 +2,14 @@
 
 namespace Tuf\ComposerIntegration;
 
+use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\RepoFileFetcherInterface;
+use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
 
 class FileFetcher implements RepoFileFetcherInterface
@@ -51,21 +53,21 @@ class FileFetcher implements RepoFileFetcherInterface
 
     private function doFetch(string $url, int $maxBytes): PromiseInterface
     {
-        // Work around a bug in Composer.
-        // @see \Tuf\ComposerIntegration\ComposerCompatibleUpdater::getLength()
-        $maxBytes++;
+        $fileName = parse_url($url, PHP_URL_PATH);
+        $fileName = basename($fileName);
 
         try {
-            $content = $this->downloader->get($url, ['max_file_size' => $maxBytes])
+            // Add 1 to $maxBytes to work around a bug in Composer.
+            // @see \Tuf\ComposerIntegration\ComposerCompatibleUpdater::getLength()
+            $content = $this->downloader->get($url, ['max_file_size' => $maxBytes + 1])
                 ->getBody();
             $stream = Utils::streamFor($content);
             return Create::promiseFor($stream);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
-                $fileName = parse_url($url, PHP_URL_PATH);
-                $fileName = basename($fileName);
-
                 $error = new RepoFileNotFound("$fileName not found");
+            } elseif ($e instanceof MaxFileSizeExceededException) {
+                $error = new DownloadSizeException("$fileName exceeded $maxBytes bytes");
             } else {
                 $error = new \RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
