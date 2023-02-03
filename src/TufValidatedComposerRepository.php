@@ -11,7 +11,6 @@ use Composer\Repository\ComposerRepository;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
-use Tuf\Client\GuzzleFileFetcher;
 use Tuf\Exception\NotFoundException;
 use Tuf\Metadata\RootMetadata;
 use Tuf\Metadata\StorageInterface;
@@ -54,7 +53,7 @@ class TufValidatedComposerRepository extends ComposerRepository
 
         if (isset($repoConfig['tuf'])) {
             $this->updater = new ComposerCompatibleUpdater(
-                GuzzleFileFetcher::createFromUri($url),
+                new FileFetcher($httpDownloader, "$url/metadata", "$url/targets"),
                 [],
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
