@@ -55,7 +55,6 @@ class TufValidatedComposerRepository extends ComposerRepository
         if (isset($repoConfig['tuf'])) {
             $this->updater = new ComposerCompatibleUpdater(
                 GuzzleFileFetcher::createFromUri($url),
-                [],
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
             );
