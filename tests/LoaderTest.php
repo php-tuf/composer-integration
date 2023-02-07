@@ -9,31 +9,26 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Http\Message\StreamInterface;
-use Tuf\ComposerIntegration\FileFetcher;
+use Tuf\ComposerIntegration\Loader;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
 
 /**
- * @covers \Tuf\ComposerIntegration\FileFetcher
+ * @covers \Tuf\ComposerIntegration\Loader
  */
-class FileFetcherTest extends TestCase
+class LoaderTest extends TestCase
 {
     use ProphecyTrait;
 
-    public function testFileFetcher(): void
+    public function testLoader(): void
     {
         $downloader = $this->prophesize(HttpDownloader::class);
-        $fetcher = new FileFetcher($downloader->reveal(), '/metadata', '/targets');
+        $loader = new Loader($downloader->reveal(), '/metadata/');
 
         $downloader->get('/metadata/root.json', ['max_file_size' => 129])
             ->willReturn(new Response())
             ->shouldBeCalled();
-        $this->assertInstanceOf(StreamInterface::class, $fetcher->fetchMetadata('root.json', 128)->wait());
-
-        $downloader->get('/targets/payload.zip', ['max_file_size' => 257])
-            ->willReturn(new Response())
-            ->shouldBeCalled();
-        $this->assertInstanceOf(StreamInterface::class, $fetcher->fetchTarget('payload.zip', 256)->wait());
+        $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128));
 
         // Any TransportException with a 404 error could should be converted
         // into a RepoFileNotFound exception.
@@ -43,7 +38,7 @@ class FileFetcherTest extends TestCase
             ->willThrow($exception)
             ->shouldBeCalled();
         try {
-            $fetcher->fetchMetadata('bogus.txt', 10)->wait();
+            $loader->load('bogus.txt', 10);
             $this->fail('Expected a RepoFileNotFound exception, but none was thrown.');
         } catch (RepoFileNotFound $e) {
             $this->assertSame('bogus.txt not found', $e->getMessage());
@@ -51,11 +46,11 @@ class FileFetcherTest extends TestCase
 
         // A MaxFileSizeExceededException should be converted into a
         // DownloadSizeException.
-        $downloader->get('/targets/too_big.txt', ['max_file_size' => 11])
+        $downloader->get('/metadata/too_big.txt', ['max_file_size' => 11])
             ->willThrow(new MaxFileSizeExceededException())
             ->shouldBeCalled();
         try {
-            $fetcher->fetchTarget('too_big.txt', 10)->wait();
+            $loader->load('too_big.txt', 10);
             $this->fail('Expected a DownloadSizeException, but none was thrown.');
         } catch (DownloadSizeException $e) {
             $this->assertSame('too_big.txt exceeded 10 bytes', $e->getMessage());
@@ -68,7 +63,7 @@ class FileFetcherTest extends TestCase
             ->willThrow($originalException)
             ->shouldBeCalled();
         try {
-            $fetcher->fetchMetadata('wtf.txt', 10)->wait();
+            $loader->load('wtf.txt', 10);
             $this->fail('Expected a RuntimeException, but none was thrown.');
         } catch (\RuntimeException $e) {
             $this->assertSame($originalException->getMessage(), $e->getMessage());
