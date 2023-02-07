@@ -10,10 +10,8 @@ use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
-use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Exception\NotFoundException;
-use Tuf\Loader\GuzzleLoader;
 use Tuf\Loader\SizeCheckingLoader;
 use Tuf\Metadata\RootMetadata;
 use Tuf\Metadata\StorageInterface;
@@ -55,13 +53,8 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = rtrim($repoConfig['url'], '/');
 
         if (isset($repoConfig['tuf'])) {
-            $client = new Client([
-                // We need the trailing slash here in order for Guzzle to build
-                // the correct URLs.
-                'base_uri' => "$url/metadata/",
-            ]);
             $this->updater = new ComposerCompatibleUpdater(
-                new SizeCheckingLoader(new GuzzleLoader($client)),
+                new SizeCheckingLoader(new Loader($httpDownloader, "$url/metadata/")),
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
             );
