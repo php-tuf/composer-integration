@@ -7,7 +7,7 @@ use Composer\Util\Filesystem;
 use Tuf\Client\DurableStorage\FileStorage;
 
 /**
- * Defines storage for the PHP-TUF metadata of a repository in a Composer project.
+ * Defines storage for the TUF metadata of a repository in a Composer project.
  */
 class ComposerFileStorage extends FileStorage
 {

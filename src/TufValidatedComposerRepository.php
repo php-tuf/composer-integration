@@ -22,7 +22,7 @@ use Tuf\Metadata\StorageInterface;
 class TufValidatedComposerRepository extends ComposerRepository
 {
     /**
-     * The maximum allowable length of a 404 response for metadata.
+     * The maximum allowable length of a 404 response for Composer metadata.
      *
      * @see ::prepareMetadata()
      *
@@ -73,7 +73,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     }
 
     /**
-     * Initializes the durable storage for this repository's TUF data.
+     * Initializes the durable storage for this repository's TUF metadata.
      *
      * @param string $url
      *   The repository URL.
@@ -109,7 +109,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     }
 
     /**
-     * Tries to determine the location of the initial root metadata for a repository.
+     * Determine the location of the initial root TUF metadata for a repository.
      *
      * @param string $url
      *   The repository URL.
@@ -117,8 +117,8 @@ class TufValidatedComposerRepository extends ComposerRepository
      *   The current Composer configuration.
      *
      * @return string|null
-     *   The path of the initial root metadata for the repository, or null if none
-     *   was found.
+     *   The path of the initial root TUF metadata for the repository, or null
+     *   if none was found.
      */
     private function locateRootMetadata(string $url, Config $config): ?string
     {
@@ -191,19 +191,19 @@ class TufValidatedComposerRepository extends ComposerRepository
     }
 
     /**
-     * Reacts before metadata is downloaded.
+     * Reacts before Composer metadata is downloaded.
      *
      * @param PreFileDownloadEvent $event
      *   The event object.
      */
-    public function prepareMetadata(PreFileDownloadEvent $event): void
+    public function prepareComposerMetadata(PreFileDownloadEvent $event): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($event->getProcessedUrl());
             $options = $event->getTransportOptions();
             try {
                 $options['max_file_size'] = $this->updater->getLength($target);
-            } catch (NotFoundException $e) {
+            } catch (NotFoundException) {
                 // As it compiles information on the available packages, ComposerRepository
                 // expects to receive occasional 404 responses from the server, which
                 // it treats as a totally normal indication that the repository doesn't have
@@ -211,10 +211,10 @@ class TufValidatedComposerRepository extends ComposerRepository
                 // don't have a corresponding TUF target, which means Updater::getLength()
                 // will throw exceptions. Since we need to allow those requests to happen,
                 // a reasonable compromise is to constrain the response size for unknown
-                // metadata targets to a small constant value (we don't expect 404 responses
-                // to be particularly verbose). This is NOT something we want to do for
-                // actual package requests, since it's always an error condition if a package
-                // URL returns a 404. That's why we don't do a similar try-catch in
+                // Composer metadata targets to a small constant value (we don't expect 404
+                // responses to be particularly verbose). This is NOT something we want to do
+                // for actual package requests, since it's always an error condition if a
+                // package URL returns a 404. That's why we don't do a similar try-catch in
                 // ::configurePackageTransportOptions().
                 $options['max_file_size'] = static::MAX_404_BYTES;
             }
@@ -225,14 +225,14 @@ class TufValidatedComposerRepository extends ComposerRepository
     }
 
     /**
-     * Validates downloaded metadata with TUF.
+     * Validates downloaded Composer metadata with TUF.
      *
      * @param string $url
-     *   The URL from which the metadata was downloaded.
+     *   The URL from which the Composer metadata was downloaded.
      * @param Response $response
-     *   The HTTP response for the downloaded metadata.
+     *   The HTTP response for the downloaded Composer metadata.
      */
-    public function validateMetadata(string $url, Response $response): void
+    public function validateComposerMetadata(string $url, Response $response): void
     {
         if ($this->isTufEnabled()) {
             $target = $this->getTargetFromUrl($url);
