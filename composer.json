@@ -23,7 +23,7 @@
     "require": {
         "composer-plugin-api": "^2.2",
         "php-tuf/php-tuf": "dev-main",
-        "guzzlehttp/psr7": "^1.7"
+        "guzzlehttp/psr7": "^2.4"
     },
     "autoload": {
         "psr-4": {
