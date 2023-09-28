@@ -52,9 +52,15 @@ class TufValidatedComposerRepository extends ComposerRepository
         $this->io = $io;
         $url = rtrim($repoConfig['url'], '/');
 
-        if (isset($repoConfig['tuf'])) {
+        if (!empty($repoConfig['tuf'])) {
+            // TUF metadata can optionally be loaded from a different place than the Composer package metadata.
+            $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
+            if (!str_ends_with($metadataUrl, '/')) {
+                $metadataUrl .= '/';
+            }
+
             $this->updater = new ComposerCompatibleUpdater(
-                new SizeCheckingLoader(new Loader($httpDownloader, "$url/metadata/")),
+                new SizeCheckingLoader(new Loader($httpDownloader, $metadataUrl)),
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
             );
@@ -64,7 +70,9 @@ class TufValidatedComposerRepository extends ComposerRepository
             // prefixed with that.
             $repoConfig['url'] = "$url/targets";
 
-            $io->debug("[TUF] Packages from $url are verified with base URL " . $repoConfig['url']);
+            $io->debug("[TUF] Packages from $url are verified by TUF.");
+            $io->debug("[TUF] Metadata source: $metadataUrl");
+            $io->debug("[TUF] Targets source: " . $repoConfig['url']);
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");
