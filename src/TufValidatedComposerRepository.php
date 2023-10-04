@@ -11,6 +11,7 @@ use Composer\Repository\ComposerRepository;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
+use Tuf\Client\Repository;
 use Tuf\Exception\NotFoundException;
 use Tuf\Loader\SizeCheckingLoader;
 use Tuf\Metadata\RootMetadata;
@@ -57,6 +58,11 @@ class TufValidatedComposerRepository extends ComposerRepository
             $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
             if (!str_ends_with($metadataUrl, '/')) {
                 $metadataUrl .= '/';
+            }
+
+            $maxBytes = $repoConfig['tuf']['max-bytes'] ?? NULL;
+            if (is_int($maxBytes)) {
+                Repository::$maxBytes = $maxBytes;
             }
 
             $this->updater = new ComposerCompatibleUpdater(
