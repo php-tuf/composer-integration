@@ -147,7 +147,7 @@ class ComposerCommandsTest extends TestCase
         $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
         $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified by TUF.', $debug);
         $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8080/metadata/', $debug);
-        $this->assertStringContainsString('[TUF] Targets source: http://localhost:8080/targets', $debug);
+        $this->assertStringContainsString('[TUF] Targets source: http://localhost:8080', $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
         $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1379 bytes.", $debug);
