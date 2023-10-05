@@ -15,7 +15,9 @@ use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Tuf\Client\Repository;
 use Tuf\Client\Updater;
+use Tuf\ComposerIntegration\ComposerCompatibleUpdater;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
@@ -92,7 +94,7 @@ class ApiTest extends TestCase
     {
         $manager = $this->composer->getRepositoryManager();
 
-        $config['tuf'] = true;
+        $config += ['tuf' => true];
         $repository = $manager->createRepository('composer', $config);
         $this->setUpdater($repository, $updater);
         // Prepend the new repository to the list, so that it will be found first
@@ -302,5 +304,17 @@ class ApiTest extends TestCase
            'url' => 'https://packagist.example.net',
         ]);
         $this->assertInstanceOf(TufValidatedComposerRepository::class, $repository);
+    }
+
+    public function testMaxBytesOverride(): void
+    {
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
+        $this->mockRepository($updater->reveal(), [
+            'url' => 'http://localhost:8080',
+            'tuf' => [
+                'max-bytes' => 123,
+            ],
+        ]);
+        $this->assertSame(123, Repository::$maxBytes);
     }
 }
