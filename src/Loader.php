@@ -2,6 +2,7 @@
 
 namespace Tuf\ComposerIntegration;
 
+use Composer\IO\IOInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\RequestOptions;
@@ -15,7 +16,7 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
-    public function __construct(private ClientInterface $client)
+    public function __construct(private ClientInterface $client, private IOInterface $io)
     {
     }
 
@@ -38,7 +39,9 @@ class Loader implements LoaderInterface
         ];
 
         try {
-            return $this->client->get($locator, $options)->getBody();
+            $body = $this->client->get($locator, $options)->getBody();
+            $this->io->debug("[TUF] Downloaded $locator (" . $body->getSize() . " bytes)");
+            return $body;
         } catch (ClientException $e) {
             if ($e->getCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");

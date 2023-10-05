@@ -70,7 +70,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 'base_uri' => $metadataUrl,
             ]);
             $this->updater = new ComposerCompatibleUpdater(
-                new SizeCheckingLoader(new Loader($client)),
+                new SizeCheckingLoader(new Loader($client, $io)),
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
             );
