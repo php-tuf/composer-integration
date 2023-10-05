@@ -35,12 +35,11 @@ class Loader implements LoaderInterface
         };
         $options = [
             RequestOptions::PROGRESS => $progress,
-            RequestOptions::STREAM => true,
         ];
 
         try {
             $body = $this->client->get($locator, $options)->getBody();
-            $this->io->debug("[TUF] Downloaded $locator (" . $body->getSize() . " bytes)");
+            $this->io->debug("[TUF] Downloaded $locator");
             return $body;
         } catch (ClientException $e) {
             if ($e->getCode() === 404) {
