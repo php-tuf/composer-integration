@@ -10,6 +10,7 @@ use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
+use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\Repository;
 use Tuf\Exception\NotFoundException;
@@ -65,8 +66,11 @@ class TufValidatedComposerRepository extends ComposerRepository
                 Repository::$maxBytes = $maxBytes;
             }
 
+            $client = new Client([
+                'base_uri' => $metadataUrl,
+            ]);
             $this->updater = new ComposerCompatibleUpdater(
-                new SizeCheckingLoader(new Loader($httpDownloader, $metadataUrl)),
+                new SizeCheckingLoader(new Loader($client)),
                 // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
                 $this->initializeStorage($url, $config)
             );

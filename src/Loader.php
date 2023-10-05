@@ -2,21 +2,20 @@
 
 namespace Tuf\ComposerIntegration;
 
-use Composer\Downloader\MaxFileSizeExceededException;
-use Composer\Downloader\TransportException;
-use Composer\Util\HttpDownloader;
-use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
 use Tuf\Loader\LoaderInterface;
 
 /**
- * Defines a data loader that wraps around Composer's HttpDownloader.
+ * Defines a data loader that wraps around Guzzle's HTTP client.
  */
 class Loader implements LoaderInterface
 {
-    public function __construct(private HttpDownloader $downloader, private string $baseUrl = '')
+    public function __construct(private ClientInterface $client)
     {
     }
 
@@ -25,19 +24,24 @@ class Loader implements LoaderInterface
      */
     public function load(string $locator, int $maxBytes): StreamInterface
     {
-        $url = $this->baseUrl . $locator;
+        // If cURL will be used (a decision internally made by Guzzle), use a
+        // progress callback to ensure we don't download the maximum number
+        // of bytes.
+        $progress = function ($expectedBytes, $downloadedBytes) use ($locator, $maxBytes) {
+            if ($expectedBytes > $maxBytes || $downloadedBytes > $maxBytes) {
+                throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
+            }
+        };
+        $options = [
+            RequestOptions::PROGRESS => $progress,
+            RequestOptions::STREAM => true,
+        ];
 
         try {
-            // Add 1 to $maxBytes to work around a bug in Composer.
-            // @see \Tuf\ComposerIntegration\ComposerCompatibleUpdater::getLength()
-            $content = $this->downloader->get($url, ['max_file_size' => $maxBytes + 1])
-                ->getBody();
-            return Utils::streamFor($content);
-        } catch (TransportException $e) {
-            if ($e->getStatusCode() === 404) {
+            return $this->client->get($locator, $options)->getBody();
+        } catch (ClientException $e) {
+            if ($e->getCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");
-            } elseif ($e instanceof MaxFileSizeExceededException) {
-                throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
             } else {
                 throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
