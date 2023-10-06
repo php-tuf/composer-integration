@@ -65,6 +65,8 @@ def generate_fixture():
 
     staging_dir = path.join(dir, 'metadata.staged')
     live_dir = path.join(dir, 'metadata')
+    if path.exists(live_dir):
+        os.rmdir(live_dir)
     os.rename(staging_dir, live_dir)
 
     # Uncomment this line to generate the client-side metadata. This
