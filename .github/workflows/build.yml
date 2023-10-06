@@ -102,7 +102,7 @@ jobs:
       - name: Start web server
         run: |
           php -S localhost:8080 &
-        working-directory: ./tests/server/targets
+        working-directory: ./tests/server
       - name: Run tests
         run: |
           vendor/bin/phpunit ./tests --debug

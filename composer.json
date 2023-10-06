@@ -43,7 +43,7 @@
             "@putenv PIPENV_PIPFILE=./vendor/php-tuf/php-tuf/Pipfile",
             "pipenv install",
             "pipenv run python ./tests/server/generate.py",
-            "cp -f ./tests/server/targets/metadata/root.json ./tests/client/tuf/localhost.json"
+            "cp -f ./tests/server/metadata/root.json ./tests/client/tuf/localhost.json"
         ],
         "test": [
             "@composer make-fixture",

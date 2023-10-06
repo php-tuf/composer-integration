@@ -10,7 +10,7 @@
         },
         "plugin": {
             "type": "path",
-            "url": "../../"
+            "url": "../"
         },
         "packagist.org": false
     },
