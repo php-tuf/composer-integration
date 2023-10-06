@@ -167,12 +167,12 @@ class ApiTest extends TestCase
      */
     public function testPostFileDownload(): void
     {
-        $url = 'http://localhost:8080';
+        $url = 'http://localhost:8080/targets';
         $stream = Argument::type('\Psr\Http\Message\StreamInterface');
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
         $package->setTransportOptions([
            'tuf' => [
-               'repository' => "$url/targets",
+               'repository' => $url,
                'target' => 'drupal/token/1.9.0.0',
            ],
         ]);
@@ -181,6 +181,9 @@ class ApiTest extends TestCase
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $repository = $this->mockRepository($updater->reveal(), [
             'url' => $url,
+            'tuf' => [
+                'metadata-url' => 'http://localhost:8080/metadata',
+            ],
         ]);
         $updater->verify('packages.json', $stream)->shouldBeCalled();
         $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
@@ -189,7 +192,7 @@ class ApiTest extends TestCase
             PluginEvents::POST_FILE_DOWNLOAD,
             null,
             null,
-            "$url/targets/packages.json",
+            "$url/packages.json",
             'metadata',
             [
                 'repository' => $repository,
@@ -251,12 +254,15 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
     {
-        $url = 'http://localhost:8080';
+        $url = 'http://localhost:8080/targets';
         $eventDispatcher = $this->composer->getEventDispatcher();
 
         $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
         $repository = $this->mockRepository($updater->reveal(), [
             'url' => $url,
+            'tuf' => [
+                'metadata-url' => 'http://localhost:8080/metadata',
+            ],
         ]);
 
         $method = $updater->getLength(urldecode($filename))->shouldBeCalled();
@@ -270,7 +276,7 @@ class ApiTest extends TestCase
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            "$url/targets/" . urlencode($filename),
+            "$url/" . urlencode($filename),
             'metadata',
             [
                 'repository' => $repository,
