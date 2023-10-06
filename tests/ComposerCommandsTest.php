@@ -144,8 +144,8 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', $package, '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
-        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified by TUF.', $debug);
+        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080/targets loaded from ', $debug);
+        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080/targets are verified by TUF.', $debug);
         $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8080/metadata/', $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
