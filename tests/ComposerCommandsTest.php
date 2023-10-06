@@ -30,7 +30,7 @@ class ComposerCommandsTest extends TestCase
         parent::setUpBeforeClass();
 
         // Ensure that static::composer() runs in the correct directory.
-        static::$projectDir = __DIR__ . '/../test-project';
+        static::$projectDir = __DIR__ . '/client';
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
@@ -144,10 +144,9 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', $package, '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
-        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified by TUF.', $debug);
+        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080/targets loaded from ', $debug);
+        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080/targets are verified by TUF.', $debug);
         $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8080/metadata/', $debug);
-        $this->assertStringContainsString('[TUF] Targets source: http://localhost:8080/targets', $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
         $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1379 bytes.", $debug);

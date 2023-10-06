@@ -40,16 +40,10 @@
     },
     "scripts": {
         "make-fixture": [
+            "@putenv PIPENV_PIPFILE=./vendor/php-tuf/php-tuf/Pipfile",
             "pipenv install",
-            "rm -r -f metadata",
-            "pipenv run python generate.py",
-            "mkdir -p ./test-project/tuf",
-            "cp -f ./metadata/root.json ./test-project/tuf/localhost.json"
-        ],
-        "post-install-cmd": "@post-update-cmd",
-        "post-update-cmd": [
-            "cp -f ./vendor/php-tuf/php-tuf/Pipfile* .",
-            "ln -s -f ./targets/packages.json ."
+            "pipenv run python ./tests/server/generate.py",
+            "cp -f ./tests/server/metadata/root.json ./tests/client/tuf/localhost.json"
         ],
         "test": [
             "@composer make-fixture",

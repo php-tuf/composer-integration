@@ -71,14 +71,8 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $this->initializeStorage($url, $config)
             );
 
-            // The Python tool (which generates the server-side TUF repository) will
-            // put all signed files into /targets, so ensure that all downloads are
-            // prefixed with that.
-            $repoConfig['url'] = "$url/targets";
-
             $io->debug("[TUF] Packages from $url are verified by TUF.");
             $io->debug("[TUF] Metadata source: $metadataUrl");
-            $io->debug("[TUF] Targets source: " . $repoConfig['url']);
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
             $io->warning("Authenticity of packages from $url are not verified by TUF.");

@@ -10,7 +10,7 @@ from os import path
 # https://github.com/php-tuf/php-tuf/blob/main/generate_fixtures.py
 
 def import_keypair(name):
-    dir = path.join(os.getcwd(), 'keys')
+    dir = path.join(path.dirname(__file__), 'keys')
     private_path = path.join(dir, name)
     public_path = private_path + '.pub'
 
@@ -21,7 +21,7 @@ def import_keypair(name):
     return (public, private)
 
 def generate_fixture():
-    dir = os.getcwd()
+    dir = path.dirname(__file__)
 
     # Create a basic TUF repository.
     print('Initializing TUF repository in', dir)
@@ -65,6 +65,8 @@ def generate_fixture():
 
     staging_dir = path.join(dir, 'metadata.staged')
     live_dir = path.join(dir, 'metadata')
+    if path.exists(live_dir):
+        shutil.rmtree(live_dir)
     os.rename(staging_dir, live_dir)
 
     # Uncomment this line to generate the client-side metadata. This

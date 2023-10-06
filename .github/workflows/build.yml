@@ -25,9 +25,6 @@ jobs:
           ref: main
           path: php-tuf
           fetch-depth: 1
-      - name: Copy Pipfile from PHP-TUF
-        run: |
-          cp -f php-tuf/Pipfile* .
       - id: cache-pip
         uses: actions/cache@v2
         with:
@@ -53,17 +50,20 @@ jobs:
       - name: Install dependencies via pipenv
         run: |
           if [ -f Pipfile.lock ]; then pipenv install; fi
+        working-directory: php-tuf
       - name: Generate fixtures
         run: |
           pipenv run python generate.py
-          mkdir -p ./test-project/tuf
-          cp -f ./metadata/root.json ./test-project/tuf/localhost.json
-          tar -c -z -f fixture.tar.gz metadata ./test-project/tuf/localhost.json
+          cp -f ./metadata/root.json ../client/tuf/localhost.json
+          tar -c -z -f fixture.tar.gz --directory ../.. ./tests/server/metadata ./tests/client/tuf/localhost.json
+        env:
+          PIPENV_PIPFILE: ../../php-tuf/Pipfile
+        working-directory: ./tests/server
       - name: Store fixtures as artifact
         uses: actions/upload-artifact@v3
         with:
           name: fixture
-          path: fixture.tar.gz
+          path: ./tests/server/fixture.tar.gz
           retention-days: 5
 
   test:
@@ -97,9 +97,9 @@ jobs:
           name: fixture
       - name: Extract fixture
         run: tar -x -v -f fixture.tar.gz
-      - name: Start PHP server and run tests
+      - name: Start web server and run tests
         run: |
-          php -S localhost:8080 &
+          php -S localhost:8080 -t ./tests/server &
           vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities (legacy)
         if: matrix.composer == 2.2
