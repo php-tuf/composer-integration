@@ -193,8 +193,20 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     private function getTargetFromUrl(string $url): string
     {
-        $config = $this->getRepoConfig();
-        $target = str_replace($config['url'], '', $url);
+        // If we are using lazy providers, then we'll need to handle $url differently if $url contains
+        // the non-dynamic parts of the lazy providers URL.
+        if ($this->lazyProvidersUrl) {
+            $lazyProvidersUrl = str_replace('%package%.json', '', $this->lazyProvidersUrl);
+        }
+
+        // If $url is a lazy provider, its path (without the leading slash) is expected to
+        // map to a target path known to TUF. Otherwise, do a more naïve match by just
+        // stripping out the base URL of the repository.
+        if (isset($lazyProvidersUrl) && str_contains($url, $lazyProvidersUrl)) {
+            $target = parse_url($url, PHP_URL_PATH);
+        } else {
+            $target = str_replace($this->getRepoConfig()['url'], '', $url);
+        }
         return urldecode(ltrim($target, '/'));
     }
 
