@@ -64,7 +64,7 @@ def generate_fixture():
     repository.writeall(consistent_snapshot=True)
 
     staging_dir = path.join(dir, 'metadata.staged')
-    live_dir = path.join(dir, 'metadata')
+    live_dir = path.join(dir, 'targets', 'metadata')
     if path.exists(live_dir):
         shutil.rmtree(live_dir)
     os.rename(staging_dir, live_dir)
