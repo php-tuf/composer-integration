@@ -12,14 +12,17 @@ use Composer\Plugin\PostFileDownloadEvent;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
+use Composer\Util\Http\Response;
 use PHPUnit\Framework\TestCase;
 use Prophecy\Argument;
 use Prophecy\PhpUnit\ProphecyTrait;
+use Psr\Http\Message\StreamInterface;
 use Tuf\Client\Repository;
 use Tuf\Client\Updater;
 use Tuf\ComposerIntegration\ComposerCompatibleUpdater;
 use Tuf\ComposerIntegration\Plugin;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
+use Tuf\Exception\NotFoundException;
 
 /**
  * Contains unit test coverage of the Composer plugin class.
@@ -83,20 +86,26 @@ class ApiTest extends TestCase
      * Creates a TUF-validated repository object with a mocked TUF updater.
      *
      * @param Updater $updater
-     *   The TUF updater to use.
+     *   (optional) The TUF updater to use. Defaults to a plain mock.
      * @param array $config
-     *   The repository configuration.
+     *   (optional) The repository configuration. By default, will use the
+     *   server layout in `tests/server`.
      *
      * @return TufValidatedComposerRepository
      *   The created repository object.
      */
-    private function mockRepository(Updater $updater, array $config): TufValidatedComposerRepository
+    private function mockRepository(Updater $updater = NULL, array $config = []): TufValidatedComposerRepository
     {
         $manager = $this->composer->getRepositoryManager();
 
-        $config += ['tuf' => true];
+        $config += [
+            'url' => 'http://localhost:8080/targets',
+            'tuf' => [
+                'metadata-url' => 'http://localhost:8080/metadata',
+            ],
+        ];
         $repository = $manager->createRepository('composer', $config);
-        $this->setUpdater($repository, $updater);
+        $this->setUpdater($repository, $updater ?? $this->createMock(ComposerCompatibleUpdater::class));
         // Prepend the new repository to the list, so that it will be found first
         // if the plugin searches for the repository by its URL.
         // @see \Tuf\ComposerIntegration\Plugin::postFileDownload()
@@ -147,7 +156,7 @@ class ApiTest extends TestCase
             }
         };
 
-        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
         $updater->getLength('drupal/token/1.9.0.0')
             ->willReturn(36)
             ->shouldBeCalled();
@@ -167,8 +176,13 @@ class ApiTest extends TestCase
      */
     public function testPostFileDownload(): void
     {
-        $url = 'http://localhost:8080/targets';
-        $stream = Argument::type('\Psr\Http\Message\StreamInterface');
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
+        $stream = Argument::type(StreamInterface::class);
+        $updater->verify('packages.json', $stream)->shouldBeCalled();
+        $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
+
+        $repository = $this->mockRepository($updater->reveal());
+        $url = $repository->getRepoConfig()['url'];
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
         $package->setTransportOptions([
            'tuf' => [
@@ -178,16 +192,6 @@ class ApiTest extends TestCase
         ]);
         $eventDispatcher = $this->composer->getEventDispatcher();
 
-        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
-        $repository = $this->mockRepository($updater->reveal(), [
-            'url' => $url,
-            'tuf' => [
-                'metadata-url' => 'http://localhost:8080/metadata',
-            ],
-        ]);
-        $updater->verify('packages.json', $stream)->shouldBeCalled();
-        $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
-
         $event = new PostFileDownloadEvent(
             PluginEvents::POST_FILE_DOWNLOAD,
             null,
@@ -196,7 +200,7 @@ class ApiTest extends TestCase
             'metadata',
             [
                 'repository' => $repository,
-                'response' => $this->prophesize('\Composer\Util\Http\Response')->reveal(),
+                'response' => $this->prophesize(Response::class)->reveal(),
             ]
         );
         $eventDispatcher->dispatch($event->getName(), $event);
@@ -254,35 +258,28 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
     {
-        $url = 'http://localhost:8080/targets';
-        $eventDispatcher = $this->composer->getEventDispatcher();
-
-        $updater = $this->prophesize('\Tuf\ComposerIntegration\ComposerCompatibleUpdater');
-        $repository = $this->mockRepository($updater->reveal(), [
-            'url' => $url,
-            'tuf' => [
-                'metadata-url' => 'http://localhost:8080/metadata',
-            ],
-        ]);
-
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
         $method = $updater->getLength(urldecode($filename))->shouldBeCalled();
         if (isset($known_size)) {
             $method->willReturn($known_size);
         } else {
-            $method->willThrow('\Tuf\Exception\NotFoundException');
+            $method->willThrow(NotFoundException::class);
         }
+
+        $repository = $this->mockRepository($updater->reveal());
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
-            "$url/" . urlencode($filename),
+            "http://localhost:8080/targets/" . urlencode($filename),
             'metadata',
             [
                 'repository' => $repository,
             ]
         );
-        $eventDispatcher->dispatch($event->getName(), $event);
+        $this->composer->getEventDispatcher()
+            ->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
         $this->assertSame($expected_size, $options['max_file_size']);
     }
@@ -316,7 +313,7 @@ class ApiTest extends TestCase
     {
         $updater = $this->prophesize(ComposerCompatibleUpdater::class);
         $this->mockRepository($updater->reveal(), [
-            'url' => 'http://localhost:8080',
+            'url' => 'http://localhost',
             'tuf' => [
                 'max-bytes' => 123,
             ],
