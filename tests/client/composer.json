@@ -5,8 +5,10 @@
     "repositories": {
         "fixture": {
             "type": "composer",
-            "url": "http://localhost:8080",
-            "tuf": true
+            "url": "http://localhost:8080/targets",
+            "tuf": {
+                "metadata-url": "http://localhost:8080/metadata"
+            }
         },
         "plugin": {
             "type": "path",
