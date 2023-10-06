@@ -55,17 +55,15 @@ jobs:
         run: |
           pipenv run python generate.py
           cp -f ./metadata/root.json ../client/tuf/localhost.json
+          tar -c -z -f fixture.tar.gz --directory ../.. ./tests/server/metadata ./tests/client/tuf/localhost.json
         env:
           PIPENV_PIPFILE: ../../php-tuf/Pipfile
         working-directory: ./tests/server
-      - name: Archive fixtures for storage
-        run: |
-          tar -c -z -f fixture.tar.gz ./tests/server/metadata ./tests/client/tuf/localhost.json
       - name: Store fixtures as artifact
         uses: actions/upload-artifact@v3
         with:
           name: fixture
-          path: fixture.tar.gz
+          path: ./tests/server/fixture.tar.gz
           retention-days: 5
 
   test:
