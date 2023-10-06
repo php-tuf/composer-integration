@@ -56,7 +56,7 @@ jobs:
           pipenv run python generate.py
           cp -f ./metadata/root.json ../client/tuf/localhost.json
         env:
-          PIPENV_PIPFILE=../../Pipfile
+          PIPENV_PIPFILE: ../../Pipfile
         working-directory: ./tests/server
       - name: Archive fixtures for storage
         run: |
