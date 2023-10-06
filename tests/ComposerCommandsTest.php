@@ -30,7 +30,7 @@ class ComposerCommandsTest extends TestCase
         parent::setUpBeforeClass();
 
         // Ensure that static::composer() runs in the correct directory.
-        static::$projectDir = __DIR__ . '/../test-project';
+        static::$projectDir = __DIR__ . '/client';
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
