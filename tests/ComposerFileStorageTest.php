@@ -51,22 +51,39 @@ class ComposerFileStorageTest extends TestCase
     }
 
     /**
+     * @covers ::escapeUrl
+     */
+    public function testEscapeUrl(): void
+    {
+        // Ensure that two very similar URLs are converted into unique, but
+        // readable, directory names.
+        $url1 = ComposerFileStorage::escapeUrl('https://site.coop/info/packages');
+        $url2 = ComposerFileStorage::escapeUrl('https://site.coop.info/packages');
+
+        $this->assertNotSame($url1, $url2);
+        $this->assertMatchesRegularExpression('/^https---site\.coop-info-packages-[a-z0-9]{8}$/', $url1);
+        $this->assertMatchesRegularExpression('/^https---site\.coop\.info-packages-[a-z0-9]{8}$/', $url2);
+    }
+
+    /**
      * @covers ::__construct
      * @covers ::create
      *
      * @depends testBasePath
+     * @depends testEscapeUrl
      */
     public function testCreate(): void
     {
+        $url = 'https://example.net/packages';
         $config = new Config();
 
         $basePath = implode(DIRECTORY_SEPARATOR, [
            ComposerFileStorage::basePath($config),
-            'https---example.net-packages',
+           ComposerFileStorage::escapeUrl($url),
         ]);
         $this->assertDirectoryDoesNotExist($basePath);
 
-        ComposerFileStorage::create('https://example.net/packages', $config);
+        ComposerFileStorage::create($url, $config);
         $this->assertDirectoryExists($basePath);
     }
 }

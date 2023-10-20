@@ -53,8 +53,30 @@ class ComposerFileStorage extends FileStorage
     {
         $basePath = implode(DIRECTORY_SEPARATOR, [
             static::basePath($config),
-            preg_replace('/[^[:alnum:]\.]/', '-', $url),
+            static::escapeUrl($url),
         ]);
         return new static($basePath);
+    }
+
+    /**
+     * Converts a repository URL to a unique directory name.
+     *
+     * @param string $url
+     *   A repository URL.
+     *
+     * @return string
+     *   A version of the URL suitable to use as the name of the persistent
+     *   storage directory.
+     */
+    public static function escapeUrl(string $url): string
+    {
+        $escapedUrl = preg_replace('/[^[:alnum:]\.]/', '-', $url);
+        // Append a partial hash of the unescaped URL, to prevent URLs like
+        // `https://www.site.coop.info/packages` from colliding with
+        // `https://www.site.coop/info/packages`, whilst keeping the directory
+        // names easily distinguishable.
+        $hashedUrl = hash('sha256', $url);
+
+        return $escapedUrl . '-' . substr($hashedUrl, 0, 8);
     }
 }
