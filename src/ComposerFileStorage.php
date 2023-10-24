@@ -76,10 +76,21 @@ class ComposerFileStorage extends FileStorage
         if (file_exists($path)) {
             $modifiedTime = filemtime($path);
             if (is_int($modifiedTime)) {
-                return (new \DateTimeImmutable)->setTimestamp($modifiedTime);
+                // The @ prefix tells \DateTimeImmutable that $modifiedTime is
+                // a UNIX timestamp.
+                return new \DateTimeImmutable("@$modifiedTime");
             }
             throw new \RuntimeException("Could not get the modification time for '$path'.");
         }
         return null;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function read(string $name): ?string
+    {
+        return parent::read($name);
+    }
+
 }

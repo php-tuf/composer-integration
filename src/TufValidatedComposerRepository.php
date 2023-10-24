@@ -15,7 +15,6 @@ use Tuf\Client\Repository;
 use Tuf\Exception\NotFoundException;
 use Tuf\Loader\SizeCheckingLoader;
 use Tuf\Metadata\RootMetadata;
-use Tuf\Metadata\StorageInterface;
 
 /**
  * Defines a Composer repository that is protected by TUF.
@@ -65,11 +64,11 @@ class TufValidatedComposerRepository extends ComposerRepository
                 Repository::$maxBytes = $maxBytes;
             }
 
-            $this->updater = new ComposerCompatibleUpdater(
-                new SizeCheckingLoader(new Loader($httpDownloader, $metadataUrl)),
-                // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
-                $this->initializeStorage($url, $config)
-            );
+            // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
+            $storage = $this->initializeStorage($url, $config);
+            $loader = new Loader($httpDownloader, $storage, $metadataUrl);
+            $loader = new SizeCheckingLoader($loader);
+            $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 
             $io->debug("[TUF] Packages from $url are verified by TUF.");
             $io->debug("[TUF] Metadata source: $metadataUrl");
@@ -88,13 +87,13 @@ class TufValidatedComposerRepository extends ComposerRepository
      * @param Config $config
      *   The Composer configuration.
      *
-     * @return \Tuf\Metadata\StorageInterface
+     * @return \Tuf\ComposerIntegration\ComposerFileStorage
      *   A durable storage object for this repository's TUF data.
      *
      * @throws \RuntimeException
      *   If no root metadata could be found for this repository.
      */
-    private function initializeStorage(string $url, Config $config): StorageInterface
+    private function initializeStorage(string $url, Config $config): ComposerFileStorage
     {
         $storage = ComposerFileStorage::create($url, $config);
 
