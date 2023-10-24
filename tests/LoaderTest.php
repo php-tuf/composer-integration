@@ -83,6 +83,7 @@ class LoaderTest extends TestCase
 
         $method = new \ReflectionMethod($storage, 'write');
         $method->invoke($storage, 'test', 'Some test data.');
+        $method->setAccessible(true);
         $modifiedTime = $storage->getModifiedTime('test')->format('D, d M Y H:i:s');
 
         $downloader = $this->prophesize(HttpDownloader::class);
