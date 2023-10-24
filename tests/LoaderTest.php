@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Http\Message\StreamInterface;
+use Tuf\ComposerIntegration\ComposerFileStorage;
 use Tuf\ComposerIntegration\Loader;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
@@ -23,7 +24,8 @@ class LoaderTest extends TestCase
     public function testLoader(): void
     {
         $downloader = $this->prophesize(HttpDownloader::class);
-        $loader = new Loader($downloader->reveal(), '/metadata/');
+        $storage = $this->prophesize(ComposerFileStorage::class);
+        $loader = new Loader($downloader->reveal(), $storage->reveal(), '/metadata/');
 
         $downloader->get('/metadata/root.json', ['max_file_size' => 129])
             ->willReturn(new Response())
