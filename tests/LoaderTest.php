@@ -82,8 +82,8 @@ class LoaderTest extends TestCase
         $storage = ComposerFileStorage::create('https://example.net/packages', $config);
 
         $method = new \ReflectionMethod($storage, 'write');
-        $method->invoke($storage, 'test', 'Some test data.');
         $method->setAccessible(true);
+        $method->invoke($storage, 'test', 'Some test data.');
         $modifiedTime = $storage->getModifiedTime('test')->format('D, d M Y H:i:s');
 
         $downloader = $this->prophesize(HttpDownloader::class);
