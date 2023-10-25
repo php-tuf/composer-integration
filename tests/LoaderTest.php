@@ -96,8 +96,12 @@ class LoaderTest extends TestCase
             ],
         ];
         $url = '2.test.json';
-        $response = new Response(['url' => $url], 304, [], null);
-        $downloader->get($url, $options)->willReturn($response)->shouldBeCalled();
+        $response = $this->prophesize(Response::class);
+        $response->getStatusCode()->willReturn(304)->shouldBeCalled();
+        $response->getBody()->shouldNotBeCalled();
+        $downloader->get($url, $options)
+            ->willReturn($response->reveal())
+            ->shouldBeCalled();
 
         $loader = new Loader($downloader->reveal(), $storage);
         // Since the response has no actual body data, the fact that we get the contents
