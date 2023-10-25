@@ -2,13 +2,15 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
+use Composer\Config;
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
+use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
-use GuzzleHttp\Psr7\Response;
 use PHPUnit\Framework\TestCase;
 use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Http\Message\StreamInterface;
+use Tuf\ComposerIntegration\ComposerFileStorage;
 use Tuf\ComposerIntegration\Loader;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
@@ -23,10 +25,12 @@ class LoaderTest extends TestCase
     public function testLoader(): void
     {
         $downloader = $this->prophesize(HttpDownloader::class);
-        $loader = new Loader($downloader->reveal(), '/metadata/');
+        $storage = $this->prophesize(ComposerFileStorage::class);
+        $loader = new Loader($downloader->reveal(), $storage->reveal(), '/metadata/');
 
-        $downloader->get('/metadata/root.json', ['max_file_size' => 129])
-            ->willReturn(new Response())
+        $url = '/metadata/root.json';
+        $downloader->get($url, ['max_file_size' => 129])
+            ->willReturn(new Response(['url' => $url], 200, [], null))
             ->shouldBeCalled();
         $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128));
 
@@ -70,5 +74,39 @@ class LoaderTest extends TestCase
             $this->assertSame($originalException->getCode(), $e->getCode());
             $this->assertSame($originalException, $e->getPrevious());
         }
+    }
+
+    public function testNotModifiedResponse(): void
+    {
+        $config = new Config();
+        $storage = ComposerFileStorage::create('https://example.net/packages', $config);
+
+        $method = new \ReflectionMethod($storage, 'write');
+        $method->setAccessible(true);
+        $method->invoke($storage, 'test', 'Some test data.');
+        $modifiedTime = $storage->getModifiedTime('test')->format('D, d M Y H:i:s');
+
+        $downloader = $this->prophesize(HttpDownloader::class);
+        $options = [
+            'max_file_size' => 1025,
+            'http' => [
+                'header' => [
+                    "If-Modified-Since: $modifiedTime GMT",
+                ],
+            ],
+        ];
+        $url = '2.test.json';
+        $response = $this->prophesize(Response::class);
+        $response->getStatusCode()->willReturn(304)->shouldBeCalled();
+        $response->getBody()->shouldNotBeCalled();
+        $downloader->get($url, $options)
+            ->willReturn($response->reveal())
+            ->shouldBeCalled();
+
+        $loader = new Loader($downloader->reveal(), $storage);
+        // Since the response has no actual body data, the fact that we get the contents
+        // of the file we wrote here is proof that it was ultimately read from persistent
+        // storage by the loader.
+        $this->assertSame('Some test data.', $loader->load('2.test.json', 1024)->getContents());
     }
 }

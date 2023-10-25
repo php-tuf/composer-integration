@@ -69,4 +69,35 @@ class ComposerFileStorageTest extends TestCase
         ComposerFileStorage::create('https://example.net/packages', $config);
         $this->assertDirectoryExists($basePath);
     }
+
+    /**
+     * @covers ::getModifiedTime
+     */
+    public function testModifiedTime(): void
+    {
+        $config = new Config();
+
+        $basePath = implode(DIRECTORY_SEPARATOR, [
+            ComposerFileStorage::basePath($config),
+            'https---example.net-packages',
+        ]);
+        $storage = ComposerFileStorage::create('https://example.net/packages', $config);
+
+        // A non-existent file should produce a null modification time.
+        $this->assertNull($storage->getModifiedTime('test'));
+
+        // Once the file exists, we should get a modification time.
+        $path = $basePath . DIRECTORY_SEPARATOR . 'test.json';
+        touch($path);
+        $modifiedTime = $storage->getModifiedTime('test');
+        $this->assertInstanceOf(\DateTimeImmutable::class, $modifiedTime);
+
+        // Change the modification time, and clear the file stat cache so we can
+        // be sure the new modification time is picked up; it seems that touch()
+        // doesn't do that automatically.
+        $newModifiedTime = $modifiedTime->getTimestamp() + 10;
+        touch($path, $newModifiedTime);
+        clearstatcache(filename: $path);
+        $this->assertSame($storage->getModifiedTime('test')->getTimestamp(), $newModifiedTime);
+    }
 }

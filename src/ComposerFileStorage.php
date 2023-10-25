@@ -57,4 +57,40 @@ class ComposerFileStorage extends FileStorage
         ]);
         return new static($basePath);
     }
+
+    /**
+     * Returns the time a stored file was last modified.
+     *
+     * @param string $name
+     *   The name of the file to check, without its `.json` extension.
+     *
+     * @return \DateTimeImmutable|null
+     *   The time the file was last modified, or null if the file doesn't exist.
+     *
+     * @throws \RuntimeException
+     *   If the file exists but its modification time could not be determined.
+     */
+    public function getModifiedTime(string $name): ?\DateTimeImmutable
+    {
+        $path = $this->toPath($name);
+        if (file_exists($path)) {
+            $modifiedTime = filemtime($path);
+            if (is_int($modifiedTime)) {
+                // The @ prefix tells \DateTimeImmutable that $modifiedTime is
+                // a UNIX timestamp.
+                return new \DateTimeImmutable("@$modifiedTime");
+            }
+            throw new \RuntimeException("Could not get the modification time for '$path'.");
+        }
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function read(string $name): ?string
+    {
+        return parent::read($name);
+    }
+
 }
