@@ -320,4 +320,40 @@ class ApiTest extends TestCase
         ]);
         $this->assertSame(123, Repository::$maxBytes);
     }
+
+    /**
+     * @covers ::getTargetFromUrl
+     */
+    public function testTargetFromUrl(): void
+    {
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
+
+        $updater->getLength('packages.json')
+            ->shouldBeCalled()
+            ->willReturn(39);
+        $updater->getLength('another/target.json')
+            ->shouldBeCalled()
+            ->willReturn(59);
+
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => 'http://localhost/repo',
+        ]);
+        $event = new PreFileDownloadEvent(
+            PluginEvents::PRE_FILE_DOWNLOAD,
+            $this->composer->getLoop()->getHttpDownloader(),
+            "http://localhost/repo/packages.json",
+            'metadata',
+            [
+                'repository' => $repository,
+            ]
+        );
+        $repository->prepareMetadata($event);
+        $this->assertSame(39, $event->getTransportOptions()['max_file_size']);
+
+        // If the URL of the metadata doesn't start with the repository URL,
+        // we should fall back to using the URL's path component as the target.
+        $event->setProcessedUrl('http://localhost/another/target.json');
+        $repository->prepareMetadata($event);
+        $this->assertSame(59, $event->getTransportOptions()['max_file_size']);
+    }
 }
