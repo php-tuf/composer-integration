@@ -322,6 +322,16 @@ class ApiTest extends TestCase
     }
 
     /**
+     * Tests that the URLs of Composer metadata files can be mapped to TUF targets.
+     * For example, given a repository URL of `https://example.com/packages`:
+     *
+     * - If the metadata URL starts with the repository URL, the repository URL should
+     *   be stripped out to derive the target name. For example, if the metadata URL is
+     *   `https://example.com/packages/file.json`, the target name should be `file.json`.
+     * - Otherwise, the metadata URL's path component should be used as the target name.
+     *   For example, if the metadata URL is `https://example.com/package/info.json`,
+     *   the target name should be `package/info.json`.
+     *
      * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::prepareMetadata
      * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::getTargetFromUrl
      */
