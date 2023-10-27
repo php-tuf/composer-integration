@@ -322,7 +322,8 @@ class ApiTest extends TestCase
     }
 
     /**
-     * @covers ::getTargetFromUrl
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::prepareMetadata
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::getTargetFromUrl
      */
     public function testTargetFromUrl(): void
     {
