@@ -16,6 +16,8 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
+    private array $cache = [];
+
     public function __construct(private HttpDownloader $downloader, private ComposerFileStorage $storage, private string $baseUrl = '')
     {
     }
@@ -26,6 +28,9 @@ class Loader implements LoaderInterface
     public function load(string $locator, int $maxBytes): StreamInterface
     {
         $url = $this->baseUrl . $locator;
+        if (array_key_exists($url, $this->cache)) {
+            return $this->cache[$url];
+        }
 
         $options = [
             // Add 1 to $maxBytes to work around a bug in Composer.
@@ -52,7 +57,7 @@ class Loader implements LoaderInterface
             } else {
                 $content = $response->getBody();
             }
-            return Utils::streamFor($content);
+            return $this->cache[$url] = Utils::streamFor($content);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");
