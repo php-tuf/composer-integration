@@ -320,4 +320,51 @@ class ApiTest extends TestCase
         ]);
         $this->assertSame(123, Repository::$maxBytes);
     }
+
+    /**
+     * Tests that the URLs of Composer metadata files can be mapped to TUF targets.
+     * For example, given a repository URL of `https://example.com/packages`:
+     *
+     * - If the metadata URL starts with the repository URL, the repository URL should
+     *   be stripped out to derive the target name. For example, if the metadata URL is
+     *   `https://example.com/packages/file.json`, the target name should be `file.json`.
+     * - Otherwise, the metadata URL's path component should be used as the target name.
+     *   For example, if the metadata URL is `https://example.com/package/info.json`,
+     *   the target name should be `package/info.json`.
+     *
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::prepareMetadata
+     * @covers \Tuf\ComposerIntegration\TufValidatedComposerRepository::getTargetFromUrl
+     */
+    public function testTargetFromUrl(): void
+    {
+        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
+
+        $updater->getLength('packages.json')
+            ->shouldBeCalled()
+            ->willReturn(39);
+        $updater->getLength('another/target.json')
+            ->shouldBeCalled()
+            ->willReturn(59);
+
+        $repository = $this->mockRepository($updater->reveal(), [
+            'url' => 'http://localhost/repo',
+        ]);
+        $event = new PreFileDownloadEvent(
+            PluginEvents::PRE_FILE_DOWNLOAD,
+            $this->composer->getLoop()->getHttpDownloader(),
+            "http://localhost/repo/packages.json",
+            'metadata',
+            [
+                'repository' => $repository,
+            ]
+        );
+        $repository->prepareMetadata($event);
+        $this->assertSame(39, $event->getTransportOptions()['max_file_size']);
+
+        // If the URL of the metadata doesn't start with the repository URL,
+        // we should fall back to using the URL's path component as the target.
+        $event->setProcessedUrl('http://localhost/another/target.json');
+        $repository->prepareMetadata($event);
+        $this->assertSame(59, $event->getTransportOptions()['max_file_size']);
+    }
 }

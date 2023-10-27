@@ -193,7 +193,11 @@ class TufValidatedComposerRepository extends ComposerRepository
     private function getTargetFromUrl(string $url): string
     {
         $config = $this->getRepoConfig();
-        $target = str_replace($config['url'], '', $url);
+        if (str_starts_with($url, $config['url'])) {
+            $target = str_replace($config['url'], '', $url);
+        } else {
+            $target = parse_url($url, PHP_URL_PATH);
+        }
         return urldecode(ltrim($target, '/'));
     }
 
