@@ -109,4 +109,29 @@ class LoaderTest extends TestCase
         // storage by the loader.
         $this->assertSame('Some test data.', $loader->load('2.test.json', 1024)->getContents());
     }
+
+    public function testStaticCache(): void
+    {
+        $response = $this->prophesize(Response::class);
+        $response->getStatusCode()->willReturn(200);
+        $response->getBody()->willReturn('Truly, this is amazing stuff.');
+
+        $downloader = $this->prophesize(HttpDownloader::class);
+        $downloader->get('foo.txt', ['max_file_size' => 1025])
+            ->willReturn($response->reveal())
+            ->shouldBeCalledOnce();
+
+        $loader = new Loader($downloader->reveal(), $this->prophesize(ComposerFileStorage::class)->reveal());
+        $stream = $loader->load('foo.txt', 1024);
+
+        // We should be at the beginning of the stream.
+        $this->assertSame(0, $stream->tell());
+        // Skip to the end of the stream, so we can confirm that it is rewound
+        // when loaded from the static cache.
+        $stream->seek(0, SEEK_END);
+        $this->assertGreaterThan(0, $stream->tell());
+
+        $this->assertSame($stream, $loader->load('foo.txt', 1024));
+        $this->assertSame(0, $stream->tell());
+    }
 }
