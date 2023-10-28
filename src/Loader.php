@@ -16,6 +16,9 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
+    /**
+     * @var \Psr\Http\Message\StreamInterface[]
+     */
     private array $cache = [];
 
     public function __construct(private HttpDownloader $downloader, private ComposerFileStorage $storage, private string $baseUrl = '')
@@ -29,7 +32,11 @@ class Loader implements LoaderInterface
     {
         $url = $this->baseUrl . $locator;
         if (array_key_exists($url, $this->cache)) {
-            return $this->cache[$url];
+            $cachedStream = $this->cache[$url];
+            // The underlying stream should always be seekable, since it's a string we read into memory.
+            assert($cachedStream->isSeekable());
+            $cachedStream->rewind();
+            return $cachedStream;
         }
 
         $options = [
