@@ -56,7 +56,9 @@ def generate_fixture():
     # Add more targets here as needed.
     repository.targets.add_targets(['packages.json'])
     repository.targets('package_metadata').add_target('files/packages/8/p2/drupal/token.json')
+    repository.targets('package_metadata').add_target('files/packages/8/p2/drupal/pathauto.json')
     repository.targets('package').add_target('drupal/token/1.9.0.0')
+    repository.targets('package').add_target('drupal/pathauto/1.12.0.0')
 
     # Write and publish the repository.
     repository.mark_dirty(['snapshot', 'targets', 'timestamp', 'package_metadata', 'package'])
