@@ -23,8 +23,5 @@
         },
         "secure-http": false
     },
-    "prefer-stable": true,
-    "require": {
-        "drupal/token": "^1.9"
-    }
+    "prefer-stable": true
 }
