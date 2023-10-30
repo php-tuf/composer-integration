@@ -97,10 +97,8 @@ jobs:
           name: fixture
       - name: Extract fixture
         run: tar -x -v -f fixture.tar.gz
-      - name: Start web server and run tests
-        run: |
-          php -S localhost:8080 -t ./tests/server &
-          vendor/bin/phpunit ./tests --debug
+      - name: Run tests
+        run: vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities (legacy)
         if: matrix.composer == 2.2
         run: composer require --update-with-all-dependencies roave/security-advisories:dev-latest
