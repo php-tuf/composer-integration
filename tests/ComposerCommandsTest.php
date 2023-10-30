@@ -15,6 +15,8 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ComposerCommandsTest extends TestCase
 {
+    private const CLIENT_DIR = __DIR__ . '/client';
+
     /**
      * The built-in PHP server process.
      *
@@ -38,6 +40,10 @@ class ComposerCommandsTest extends TestCase
             return str_contains($output, 'Development Server (http://localhost:8080) started');
         });
         static::assertTrue($serverStarted);
+
+        // Create a backup of composer.json that we can restore at the end of the test.
+        // @see ::tearDownAfterClass()
+        copy(self::CLIENT_DIR . '/composer.json', self::CLIENT_DIR . '/composer.json.orig');
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
@@ -64,7 +70,7 @@ class ComposerCommandsTest extends TestCase
                 ];
             }
         }
-        $destination = __DIR__ . '/client/vendor.json';
+        $destination = self::CLIENT_DIR . '/vendor.json';
         file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         static::composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
 
@@ -86,10 +92,13 @@ class ComposerCommandsTest extends TestCase
 
         // Delete files and directories created during the test.
         $file_system = new Filesystem();
-        $clientDir = __DIR__ . '/client';
-        foreach (['vendor', 'composer.lock', 'vendor.json'] as $file) {
-            $file_system->remove($clientDir . '/' . $file);
+        foreach (['vendor', 'composer.json', 'composer.lock', 'vendor.json'] as $file) {
+            $file_system->remove(self::CLIENT_DIR . '/' . $file);
         }
+
+        // Create a backup of composer.json that we can restore at the end of the test.
+        // @see ::tearDownAfterClass()
+        rename(self::CLIENT_DIR . '/composer.json.orig', self::CLIENT_DIR . '/composer.json');
 
         parent::tearDownAfterClass();
     }
@@ -111,7 +120,7 @@ class ComposerCommandsTest extends TestCase
         $command[] = '-vvv';
 
         $process = (new Process($command))
-            ->setWorkingDirectory(__DIR__ . '/client')
+            ->setWorkingDirectory(self::CLIENT_DIR)
             ->mustRun();
         static::assertSame(0, $process->getExitCode());
         // There should not be any deprecation warnings.
@@ -126,7 +135,7 @@ class ComposerCommandsTest extends TestCase
      */
     public function testRequireAndRemove(): void
     {
-        $vendorDir = __DIR__ . '/client/vendor';
+        $vendorDir = self::CLIENT_DIR . '/vendor';
 
         $this->assertDirectoryDoesNotExist($vendorDir . '/drupal/token');
         $this->assertDirectoryDoesNotExist($vendorDir . '/drupal/pathauto');
@@ -164,7 +173,7 @@ class ComposerCommandsTest extends TestCase
 
         // Load the locked package to ensure that the TUF information was saved.
         // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
-        $lock = new JsonFile(__DIR__ . '/client/composer.lock');
+        $lock = new JsonFile(self::CLIENT_DIR . '/composer.lock');
         $this->assertTrue($lock->exists());
         $lock = new FilesystemRepository($lock);
 
