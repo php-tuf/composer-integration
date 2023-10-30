@@ -23,11 +23,28 @@ class ComposerCommandsTest extends TestCase
     private static $projectDir;
 
     /**
+     * The built-in PHP server process.
+     *
+     * @see ::setUpBeforeClass()
+     * @see ::tearDownAfterClass()
+     *
+     * @var \Symfony\Component\Process\Process
+     */
+    private static Process $server;
+
+    /**
      * {@inheritDoc}
      */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
+
+        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/server');
+        self::$server->start();
+        $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
+            return str_contains($output, 'Development Server (http://localhost:8080) started');
+        });
+        static::assertTrue($serverStarted);
 
         // Ensure that static::composer() runs in the correct directory.
         static::$projectDir = __DIR__ . '/client';
@@ -73,6 +90,9 @@ class ComposerCommandsTest extends TestCase
         // Revert changes to composer.json made by ::setUpBeforeClass().
         static::composer('remove', 'php-tuf/composer-integration', '--no-update');
         static::composer('config', '--unset', 'repo.vendor');
+
+        // Stop the web server.
+        self::$server->stop();
 
         // Delete files and directories created during the test.
         $file_system = new Filesystem();
