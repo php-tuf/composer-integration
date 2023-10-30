@@ -25,6 +25,11 @@ use Tuf\Metadata\TargetsMetadata;
 class ComposerCompatibleUpdater extends Updater
 {
     /**
+     * @var ?\Tuf\Metadata\TargetsMetadata[]
+     */
+    private array $cache = [];
+
+    /**
      * {@inheritDoc}
      */
     public function verify(string $target, StreamInterface $data): void
@@ -71,10 +76,9 @@ class ComposerCompatibleUpdater extends Updater
      */
     protected function getMetadataForTarget(string $target): ?TargetsMetadata
     {
-        static $cache = [];
-        if (array_key_exists($target, $cache)) {
-            return $cache[$target];
+        if (array_key_exists($target, $this->cache)) {
+            return $this->cache[$target];
         }
-        return $cache[$target] = parent::getMetadataForTarget($target);
+        return $this->cache[$target] = parent::getMetadataForTarget($target);
     }
 }
