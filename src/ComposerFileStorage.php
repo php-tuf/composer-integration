@@ -88,9 +88,8 @@ class ComposerFileStorage extends FileStorage
     /**
      * {@inheritDoc}
      */
-    public function read(string $name): ?string
+    public function toPath(string $name): string
     {
-        return parent::read($name);
+        return parent::toPath($name);
     }
-
 }
