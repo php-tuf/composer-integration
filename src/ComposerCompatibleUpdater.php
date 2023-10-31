@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\Updater;
 use Tuf\Exception\NotFoundException;
-use Tuf\Metadata\TargetsMetadata;
 
 /**
  * Defines an updater that exposes additional information about TUF targets.
@@ -69,16 +68,5 @@ class ComposerCompatibleUpdater extends Updater
         } else {
             throw new NotFoundException($target, 'Target');
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getMetadataForTarget(string $target): ?TargetsMetadata
-    {
-        if (array_key_exists($target, $this->cache)) {
-            return $this->cache[$target];
-        }
-        return $this->cache[$target] = parent::getMetadataForTarget($target);
     }
 }
