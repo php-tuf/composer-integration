@@ -4,6 +4,7 @@ namespace Tuf\ComposerIntegration;
 
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
+use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\StreamInterface;
@@ -16,9 +17,17 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
-    public function __construct(private HttpDownloader $downloader, private ComposerFileStorage $storage, private string $baseUrl = '')
-    {
-    }
+    /**
+     * @var \Psr\Http\Message\StreamInterface[]
+     */
+    private array $cache = [];
+
+    public function __construct(
+        private HttpDownloader $downloader,
+        private ComposerFileStorage $storage,
+        private IOInterface $io,
+        private string $baseUrl = ''
+    ) {}
 
     /**
      * {@inheritDoc}
@@ -26,6 +35,15 @@ class Loader implements LoaderInterface
     public function load(string $locator, int $maxBytes): StreamInterface
     {
         $url = $this->baseUrl . $locator;
+        if (array_key_exists($url, $this->cache)) {
+            $this->io->debug("[TUF] Loading $url from static cache.");
+
+            $cachedStream = $this->cache[$url];
+            // The underlying stream should always be seekable, since it's a string we read into memory.
+            assert($cachedStream->isSeekable());
+            $cachedStream->rewind();
+            return $cachedStream;
+        }
 
         $options = [
             // Add 1 to $maxBytes to work around a bug in Composer.
@@ -52,7 +70,7 @@ class Loader implements LoaderInterface
             } else {
                 $content = $response->getBody();
             }
-            return Utils::streamFor($content);
+            return $this->cache[$url] = Utils::streamFor($content);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");
