@@ -39,7 +39,7 @@ class Loader implements LoaderInterface
             $this->io->debug("[TUF] Loading $url from static cache.");
 
             $cachedStream = $this->cache[$url];
-            // The underlying stream should always be seekable, since it's a string we read into memory.
+            // The underlying stream should always be seekable.
             assert($cachedStream->isSeekable());
             $cachedStream->rewind();
             return $cachedStream;
@@ -63,14 +63,6 @@ class Loader implements LoaderInterface
 
         try {
             $response = $this->downloader->get($url, $options);
-            // If we sent an If-Modified-Since header and received a 304 (Not Modified)
-            // response, we can just load the file from cache.
-            if ($response->getStatusCode() === 304) {
-                $content = $this->storage->read($name);
-            } else {
-                $content = $response->getBody();
-            }
-            return $this->cache[$url] = Utils::streamFor($content);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");
@@ -80,5 +72,22 @@ class Loader implements LoaderInterface
                 throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
             }
         }
+
+        // If we sent an If-Modified-Since header and received a 304 (Not Modified)
+        // response, we can just load the file from persistent storage.
+        if ($response->getStatusCode() === 304) {
+            $content = Utils::tryFopen($this->storage->toPath($name), 'r');
+        } else {
+            // To prevent the static cache from running out of memory, write the response
+            // contents to a temporary stream (which will turn into a temporary file once
+            // we've written 1024 bytes to it), which will be automatically cleaned up
+            // when it is garbage collected.
+            $content = Utils::tryFopen('php://temp/maxmemory:1024', 'r+');
+            fwrite($content, $response->getBody());
+        }
+
+        $stream = $this->cache[$url] = Utils::streamFor($content);
+        $stream->rewind();
+        return $stream;
     }
 }
