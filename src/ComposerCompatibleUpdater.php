@@ -24,11 +24,6 @@ use Tuf\Exception\NotFoundException;
 class ComposerCompatibleUpdater extends Updater
 {
     /**
-     * @var ?\Tuf\Metadata\TargetsMetadata[]
-     */
-    private array $cache = [];
-
-    /**
      * {@inheritDoc}
      */
     public function verify(string $target, StreamInterface $data): void
