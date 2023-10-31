@@ -4,6 +4,7 @@ namespace Tuf\ComposerIntegration;
 
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
+use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Psr7\Utils;
 use Psr\Http\Message\StreamInterface;
@@ -21,9 +22,12 @@ class Loader implements LoaderInterface
      */
     private array $cache = [];
 
-    public function __construct(private HttpDownloader $downloader, private ComposerFileStorage $storage, private string $baseUrl = '')
-    {
-    }
+    public function __construct(
+        private HttpDownloader $downloader,
+        private ComposerFileStorage $storage,
+        private IOInterface $io,
+        private string $baseUrl = ''
+    ) {}
 
     /**
      * {@inheritDoc}
@@ -32,6 +36,8 @@ class Loader implements LoaderInterface
     {
         $url = $this->baseUrl . $locator;
         if (array_key_exists($url, $this->cache)) {
+            $this->io->debug("[TUF] Loading $url from static cache.");
+
             $cachedStream = $this->cache[$url];
             // The underlying stream should always be seekable, since it's a string we read into memory.
             assert($cachedStream->isSeekable());
