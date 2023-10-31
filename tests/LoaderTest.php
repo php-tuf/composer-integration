@@ -5,6 +5,7 @@ namespace Tuf\ComposerIntegration\Tests;
 use Composer\Config;
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
+use Composer\IO\IOInterface;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use PHPUnit\Framework\TestCase;
@@ -25,8 +26,9 @@ class LoaderTest extends TestCase
     public function testLoader(): void
     {
         $downloader = $this->prophesize(HttpDownloader::class);
+        $io = $this->prophesize(IOInterface::class);
         $storage = $this->prophesize(ComposerFileStorage::class);
-        $loader = new Loader($downloader->reveal(), $storage->reveal(), '/metadata/');
+        $loader = new Loader($downloader->reveal(), $storage->reveal(), $io->reveal(), '/metadata/');
 
         $url = '/metadata/root.json';
         $downloader->get($url, ['max_file_size' => 129])
@@ -103,7 +105,7 @@ class LoaderTest extends TestCase
             ->willReturn($response->reveal())
             ->shouldBeCalled();
 
-        $loader = new Loader($downloader->reveal(), $storage);
+        $loader = new Loader($downloader->reveal(), $storage, $this->prophesize(IOInterface::class)->reveal());
         // Since the response has no actual body data, the fact that we get the contents
         // of the file we wrote here is proof that it was ultimately read from persistent
         // storage by the loader.
@@ -121,7 +123,7 @@ class LoaderTest extends TestCase
             ->willReturn($response->reveal())
             ->shouldBeCalledOnce();
 
-        $loader = new Loader($downloader->reveal(), $this->prophesize(ComposerFileStorage::class)->reveal());
+        $loader = new Loader($downloader->reveal(), $this->prophesize(ComposerFileStorage::class)->reveal(), $this->prophesize(IOInterface::class)->reveal());
         $stream = $loader->load('foo.txt', 1024);
 
         // We should be at the beginning of the stream.
