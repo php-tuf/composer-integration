@@ -93,7 +93,7 @@ jobs:
           # @todo This is required because Composer 2.6.5 declared support for
           # Symfony 7, but is not actually compatible with it. This line can be
           # removed when Composer 2.6.6 or later is released.
-          composer require "symfony/console:~6.4"
+          composer require 'symfony/console:^6'
           composer install ${{ env.COMPOSER_FLAGS }}
       - name: Download fixture
         uses: actions/download-artifact@v3
