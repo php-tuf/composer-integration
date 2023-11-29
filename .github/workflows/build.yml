@@ -91,6 +91,7 @@ jobs:
         run: |
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
           composer install ${{ env.COMPOSER_FLAGS }}
+          composer why symfony/console
       - name: Download fixture
         uses: actions/download-artifact@v3
         with:
