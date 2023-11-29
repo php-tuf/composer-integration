@@ -94,7 +94,7 @@ jobs:
           # Symfony 7, but is not actually compatible with it due to poor test
           # coverage. This is since fixed, and this line can be removed when Composer
           # 2.6.6 or later is released.
-          composer require symfony/console:^6 composer/composer:^2.6.5 --no-update
+          composer require "symfony/console:^6"
           composer install ${{ env.COMPOSER_FLAGS }}
       - name: Download fixture
         uses: actions/download-artifact@v3
