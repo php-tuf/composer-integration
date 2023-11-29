@@ -277,7 +277,7 @@ class TufValidatedComposerRepository extends ComposerRepository
    */
     public function getSecurityAdvisories(array $packageConstraintMap, bool $allowPartialAdvisories = FALSE): array
     {
-      $patterns = $this->loadRootServerFile(600)['available-package-patterns'] ?? null;
+      $patterns = $this->getRepoConfig()['tuf']['security-advisory-patterns'] ?? null;
 
       if ($patterns === null) {
         return parent::getSecurityAdvisories($packageConstraintMap, $allowPartialAdvisories);
