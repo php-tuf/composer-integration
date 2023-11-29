@@ -90,10 +90,10 @@ jobs:
       - name: Install dependencies
         run: |
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
-          # @todo This is required because Composer 2.6.5 declared support for
-          # Symfony 7, but is not actually compatible with it. This line can be
-          # removed when Composer 2.6.6 or later is released.
-          composer require 'symfony/console:>=6 && <7' --no-update
+          # @todo This is needed because Composer 2.6.5 declared support for
+          # Symfony 7, but isn't actually compatible with it. We can remove
+          # this line when Composer 2.6.6 or later is released.
+          composer require 'symfony/console:6.4.0' --no-update
           composer install ${{ env.COMPOSER_FLAGS }}
       - name: Download fixture
         uses: actions/download-artifact@v3
