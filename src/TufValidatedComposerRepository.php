@@ -271,4 +271,34 @@ class TufValidatedComposerRepository extends ComposerRepository
             $this->io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
         }
     }
+
+  /**
+   * {@inheritDoc}
+   */
+    public function getSecurityAdvisories(array $packageConstraintMap, bool $allowPartialAdvisories = FALSE): array
+    {
+      $patterns = $this->loadRootServerFile(600)['available-package-patterns'] ?? null;
+
+      if ($patterns === null) {
+        return parent::getSecurityAdvisories($packageConstraintMap, $allowPartialAdvisories);
+      }
+
+      foreach (array_keys($packageConstraintMap) as $packageName) {
+        $isOurs = false;
+        foreach ($patterns as $pattern) {
+          if (fnmatch($pattern, $packageName)) {
+            $isOurs = true;
+          }
+        }
+        if (!$isOurs) {
+          $this->io->debug("[TUF] Refusing to audit $packageName because it is not provided by this repository.");
+          unset($packageConstraintMap[$packageName]);
+        }
+      }
+
+      if ($packageConstraintMap) {
+        return parent::getSecurityAdvisories($packageConstraintMap, $allowPartialAdvisories);
+      }
+      return [];
+    }
 }
