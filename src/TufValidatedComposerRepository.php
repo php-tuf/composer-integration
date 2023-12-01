@@ -290,8 +290,10 @@ class TufValidatedComposerRepository extends ComposerRepository
                     $isOurs = true;
                 }
             }
-            if (!$isOurs) {
-                $this->io->debug("[TUF] Refusing to audit $packageName because it is not provided by this repository.");
+            if ($isOurs) {
+                $this->io->debug("[TUF] Auditing $packageName");
+            } else {
+                $this->io->debug("[TUF] Not auditing $packageName because it is not provided by this repository.");
                 unset($packageConstraintMap[$packageName]);
             }
         }
