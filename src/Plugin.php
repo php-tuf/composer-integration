@@ -36,10 +36,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * Reacts before metadata is downloaded.
+     * Reacts before Composer metadata is downloaded.
      *
-     * If the metadata is associated with a TUF-aware Composer repository,
-     * its maximum length in bytes will be set by TUF.
+     * If the Composer metadata is associated with a TUF-protected Composer
+     * repository, its maximum length in bytes will be set by TUF.
      *
      * @param PreFileDownloadEvent $event
      *   The event object.
@@ -49,15 +49,16 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $context = $event->getContext();
 
         if ($event->getType() === 'metadata' && $context['repository'] instanceof TufValidatedComposerRepository) {
-            $context['repository']->prepareMetadata($event);
+            $context['repository']->prepareComposerMetadata($event);
         }
     }
 
     /**
-     * Reacts when a file, or metadata, is downloaded.
+     * Reacts when a file, or Composer metadata, is downloaded.
      *
-     * If the downloaded file or metadata is associated with a TUF-aware Composer
-     * repository, then the downloaded data will be validated by TUF.
+     * If the downloaded file or Composer metadata is associated with a
+     * TUF-protected Composer repository, then the downloaded data will be
+     * validated by TUF.
      *
      * @param PostFileDownloadEvent $event
      *   The event object.
@@ -70,7 +71,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
 
         if ($type === 'metadata') {
             if ($context['repository'] instanceof TufValidatedComposerRepository) {
-                $context['repository']->validateMetadata($event->getUrl(), $context['response']);
+                $context['repository']->validateComposerMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
             // The repository URL is saved in the package's transport options so that
