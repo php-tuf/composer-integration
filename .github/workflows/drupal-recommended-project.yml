@@ -1,0 +1,37 @@
+name: Drupal recommended-project Compatibility
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 3 */2 * *'
+
+jobs:
+  composer-project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout self
+        uses: actions/checkout@v2
+        with:
+          path: composer-integration
+
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Create Drupal Project
+        run: |
+          composer create-project drupal/recommended-project project_name
+          cd project_name
+          # Set dev stability to allow for php-tuf/php-tuf to be installed.
+          composer config minimum-stability dev
+          composer config --no-plugins allow-plugins.php-tuf/composer-integration true
+          composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
+          composer config repositories.vcs-php-tuf vcs https://github.com/php-tuf/php-tuf.git
+          composer config repositories.local path ../composer-integration
+          composer require php-tuf/composer-integration:@dev --with-all-dependencies

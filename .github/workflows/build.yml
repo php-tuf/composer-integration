@@ -67,16 +67,14 @@ jobs:
           retention-days: 5
 
   test:
-    name: Test on ${{ matrix.operating-system }} with Composer ${{ matrix.composer }} and PHP ${{ matrix.php }}
+    name: Test with PHP ${{ matrix.php }}
     needs: fixture
-    runs-on: ${{ matrix.operating-system }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       max-parallel: 10
       matrix:
-        operating-system: [ubuntu-latest, macos-latest, windows-latest]
         php: ['8.0', '8.1', '8.2']
-        composer: [2, 2.2]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -85,7 +83,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: composer:v${{ matrix.composer }}
+          tools: composer:v2
           extensions: sodium, json
       - name: Install dependencies
         run: |
@@ -99,9 +97,5 @@ jobs:
         run: tar -x -v -f fixture.tar.gz
       - name: Run tests
         run: vendor/bin/phpunit ./tests --debug
-      - name: Check dependencies for known security vulnerabilities (legacy)
-        if: matrix.composer == 2.2
-        run: composer require --update-with-all-dependencies roave/security-advisories:dev-latest
       - name: Check dependencies for known security vulnerabilities
-        if: matrix.composer == 2
         run: 'composer audit'
