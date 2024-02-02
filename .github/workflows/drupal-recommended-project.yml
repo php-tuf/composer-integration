@@ -1,0 +1,41 @@
+name: Drupal recommended-project Compatibility
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 3 */2 * *'
+
+jobs:
+  composer-project:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout self
+        uses: actions/checkout@v2
+        with:
+          path: composer-integration
+
+      - name: Checkout php-tuf/php-tuf
+        uses: actions/checkout@v2
+        with:
+          repository: php-tuf/php-tuf
+          ref: main
+          path: php-tuf
+          fetch-depth: 1
+
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Create Drupal Project
+        run: |
+          composer create-project drupal/recommended-project project_name
+          cd project_name
+          composer config repositories.local path ../php-tuf
+          composer config repositories.local path ../composer-integration
+          composer require php-tuf/composer-integration:@dev --with-all-dependencies
