@@ -68,7 +68,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         /** @var array|PackageInterface $context */
         $context = $event->getContext();
 
-        if ($type === 'metadata') {
+        if ($type === 'metadata2') {
             if ($context['repository'] instanceof TufValidatedComposerRepository) {
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
