@@ -14,6 +14,8 @@ This plugin, as well as the PHP-TUF library it depends on, is in a pre-release s
 
 This plugin should currently only be used for testing, development and feedback. *Do NOT use in production for secure downloads!!*
 
+For testing this plugin for the purposes of evaluating it in the context of the Drupal Automatic Updates initiative, please use https://github.com/php-tuf/drupal-project
+
 ## Overview
 
 The plugin examines `composer` type repositories. For any that contain an additional key `tuf`, it invokes PHP-TUF
