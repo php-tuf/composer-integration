@@ -28,5 +28,6 @@ jobs:
         run: |
           composer create-project drupal/recommended-project project_name
           cd project_name
+          composer config repositories.vcs-php-tuf vcs https://github.com/php-tuf/php-tuf.git
           composer config repositories.local path ../composer-integration
           composer require php-tuf/composer-integration:@dev --with-all-dependencies
