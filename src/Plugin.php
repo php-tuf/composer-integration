@@ -56,8 +56,8 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * Reacts when a file, or metadata, is downloaded.
      *
-     * If the downloaded file or metadata is associated with a TUF-aware Composer
-     * repository, then the downloaded data will be validated by TUF.
+     * If the downloaded file or metadata is associated with a TUF-aware
+     * Composer repository, then the downloaded data will be validated by TUF.
      *
      * @param PostFileDownloadEvent $event
      *   The event object.
