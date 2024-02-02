@@ -21,7 +21,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "composer-plugin-api": "^2.2",
+        "composer-plugin-api": "^2.6",
         "php-tuf/php-tuf": "dev-main#cc5ce0c40caf2e909c6fe13b38784fb91fac612a",
         "guzzlehttp/psr7": "^2.4"
     },
