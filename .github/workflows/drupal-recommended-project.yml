@@ -30,6 +30,7 @@ jobs:
           cd project_name
           # Set dev stability to allow for php-tuf/php-tuf to be installed.
           composer config minimum-stability dev
+          composer config --no-plugins allow-plugins.php-tuf/composer-integration true
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
           composer config repositories.vcs-php-tuf vcs https://github.com/php-tuf/php-tuf.git
           composer config repositories.local path ../composer-integration
