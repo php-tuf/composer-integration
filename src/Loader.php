@@ -6,8 +6,9 @@ use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
-use Psr\Http\Message\StreamInterface;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\RepoFileNotFound;
 use Tuf\Loader\LoaderInterface;
@@ -32,7 +33,7 @@ class Loader implements LoaderInterface
     /**
      * {@inheritDoc}
      */
-    public function load(string $locator, int $maxBytes): StreamInterface
+    public function load(string $locator, int $maxBytes): PromiseInterface
     {
         $url = $this->baseUrl . $locator;
         if (array_key_exists($url, $this->cache)) {
@@ -42,7 +43,7 @@ class Loader implements LoaderInterface
             // The underlying stream should always be seekable, since it's a string we read into memory.
             assert($cachedStream->isSeekable());
             $cachedStream->rewind();
-            return $cachedStream;
+            return Create::promiseFor($cachedStream);
         }
 
         $options = [
@@ -70,7 +71,8 @@ class Loader implements LoaderInterface
             } else {
                 $content = $response->getBody();
             }
-            return $this->cache[$url] = Utils::streamFor($content);
+            $this->cache[$url] = $stream = Utils::streamFor($content);
+            return Create::promiseFor($stream);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
                 throw new RepoFileNotFound("$locator not found");
