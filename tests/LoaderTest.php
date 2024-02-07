@@ -34,7 +34,7 @@ class LoaderTest extends TestCase
         $downloader->get($url, ['max_file_size' => 129])
             ->willReturn(new Response(['url' => $url], 200, [], null))
             ->shouldBeCalled();
-        $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128));
+        $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128)->wait());
 
         // Any TransportException with a 404 error could should be converted
         // into a RepoFileNotFound exception.
@@ -109,7 +109,7 @@ class LoaderTest extends TestCase
         // Since the response has no actual body data, the fact that we get the contents
         // of the file we wrote here is proof that it was ultimately read from persistent
         // storage by the loader.
-        $this->assertSame('Some test data.', $loader->load('2.test.json', 1024)->getContents());
+        $this->assertSame('Some test data.', $loader->load('2.test.json', 1024)->wait()->getContents());
     }
 
     public function testStaticCache(): void
@@ -124,7 +124,7 @@ class LoaderTest extends TestCase
             ->shouldBeCalledOnce();
 
         $loader = new Loader($downloader->reveal(), $this->prophesize(ComposerFileStorage::class)->reveal(), $this->prophesize(IOInterface::class)->reveal());
-        $stream = $loader->load('foo.txt', 1024);
+        $stream = $loader->load('foo.txt', 1024)->wait();
 
         // We should be at the beginning of the stream.
         $this->assertSame(0, $stream->tell());
@@ -133,7 +133,7 @@ class LoaderTest extends TestCase
         $stream->seek(0, SEEK_END);
         $this->assertGreaterThan(0, $stream->tell());
 
-        $this->assertSame($stream, $loader->load('foo.txt', 1024));
+        $this->assertSame($stream, $loader->load('foo.txt', 1024)->wait());
         $this->assertSame(0, $stream->tell());
     }
 }

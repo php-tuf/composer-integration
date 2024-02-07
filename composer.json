@@ -22,7 +22,7 @@
     "minimum-stability": "stable",
     "require": {
         "composer-plugin-api": "^2.6",
-        "php-tuf/php-tuf": "0.1.2",
+        "php-tuf/php-tuf": "0.1.3",
         "guzzlehttp/psr7": "^2.4"
     },
     "autoload": {
