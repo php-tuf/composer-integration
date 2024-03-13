@@ -2,6 +2,8 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
+use Composer\Autoload\ClassLoader;
+use Composer\InstalledVersions;
 use Composer\Json\JsonFile;
 use Composer\Package\PackageInterface;
 use Composer\Repository\FilesystemRepository;
@@ -9,6 +11,7 @@ use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
+use Tuf\Tests\FixtureBuilder\Fixture;
 
 /**
  * Tests TUF protection when using Composer in an example project.
@@ -18,14 +21,29 @@ class ComposerCommandsTest extends TestCase
     private const CLIENT_DIR = __DIR__ . '/client';
 
     /**
-     * The built-in PHP server process.
+     * The built-in PHP server processes.
      *
-     * @see ::setUpBeforeClass()
+     * @see ::startServer()
      * @see ::tearDownAfterClass()
      *
-     * @var \Symfony\Component\Process\Process
+     * @var \Symfony\Component\Process\Process[]
      */
-    private static Process $server;
+    private static array $servers = [];
+
+    private static Filesystem $fileSystem;
+
+    private static function startServer(string $docRoot, int $port): void
+    {
+        static::assertDirectoryExists($docRoot);
+        $url = "localhost:$port";
+
+        $process = new Process([PHP_BINARY, '-S', $url], $docRoot);
+        $process->start();
+        static::assertTrue(
+            $process->waitUntil(fn ($type, $output) => str_contains($output, "Development Server (http://$url) started")),
+        );
+        static::$servers[] = $process;
+    }
 
     /**
      * {@inheritDoc}
@@ -34,12 +52,36 @@ class ComposerCommandsTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/server');
-        self::$server->start();
-        $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
-            return str_contains($output, 'Development Server (http://localhost:8080) started');
-        });
-        static::assertTrue($serverStarted);
+        // Ensure PHP-TUF's fixture builder is available to us.
+        $path = InstalledVersions::getInstallPath('php-tuf/php-tuf');
+        static::assertDirectoryExists($path);
+        /** @var ClassLoader[] $loaders */
+        $loaders = ClassLoader::getRegisteredLoaders();
+        reset($loaders)->addPsr4('Tuf\\Tests\\FixtureBuilder\\', $path . '/tests/FixtureBuilder');
+
+        // Build the fixture in a temporary directory.
+        $fixture = new Fixture();
+        $fixture->root->consistentSnapshot = true;
+        $fixture->delegate('targets', 'package_metadata', [
+           'paths' => ['drupal/*.json*'],
+        ]);
+        $fixture->delegate('targets', 'package', [
+            'paths' => ['drupal/*'],
+        ]);
+        $targetsDir = __DIR__ . '/targets';
+        $fixture->targets['targets']->add("$targetsDir/packages.json", 'packages.json');
+        $fixture->targets['package_metadata']->add("$targetsDir/drupal/pathauto.json", 'drupal/pathauto.json');
+        $fixture->targets['package_metadata']->add("$targetsDir/drupal/token.json", 'drupal/token.json');
+        $fixture->targets['package']->add("$targetsDir/pathauto-1.12.0.0.zip", 'drupal/pathauto/1.12.0.0');
+        $fixture->targets['package']->add("$targetsDir/token-1.9.0.0.zip", 'drupal/token/1.9.0.0');
+        $fixture->publish();
+
+        static::$fileSystem = new Filesystem();
+        static::$fileSystem->copy($fixture->serverDir . '/root.json', static::CLIENT_DIR . '/tuf/localhost.json');
+
+        // These ports are statically defined in `client/composer.json`.
+        static::startServer($targetsDir, 8086);
+        static::startServer($fixture->serverDir, 8088);
 
         // Create a backup of composer.json that we can restore at the end of the test.
         // @see ::tearDownAfterClass()
@@ -87,13 +129,14 @@ class ComposerCommandsTest extends TestCase
         static::composer('remove', 'php-tuf/composer-integration', '--no-update');
         static::composer('config', '--unset', 'repo.vendor');
 
-        // Stop the web server.
-        self::$server->stop();
+        // Stop the web servers.
+        while (static::$servers) {
+            array_pop(static::$servers)->stop();
+        }
 
         // Delete files and directories created during the test.
-        $file_system = new Filesystem();
         foreach (['vendor', 'composer.json', 'composer.lock', 'vendor.json'] as $file) {
-            $file_system->remove(self::CLIENT_DIR . '/' . $file);
+            static::$fileSystem->remove(self::CLIENT_DIR . '/' . $file);
         }
 
         // Create a backup of composer.json that we can restore at the end of the test.
@@ -145,34 +188,37 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', 'drupal/pathauto', '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080/targets loaded from ', $debug);
-        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080/targets are verified by TUF.', $debug);
-        $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8080/metadata/', $debug);
-        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
+        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8086 loaded from ', $debug);
+        $this->assertStringContainsString('[TUF] Packages from http://localhost:8086 are verified by TUF.', $debug);
+        $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8088', $debug);
+        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 93 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/pathauto.json' limited to 1610 bytes.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/pathauto.json' validated.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1330 bytes.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto.json' limited to 1610 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token.json' limited to 1330 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token.json' validated.", $debug);
         // token~dev.json doesn't exist, so the plugin will limit it to a hard-coded maximum
         // size, and there should not be a message saying that it was validated.
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
-        $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
+        $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/token~dev.json' validated.", $debug);
         // The plugin won't report the maximum download size of package targets; instead, that
         // information will be stored in the transport options saved to the lock file.
         $this->assertStringContainsString("[TUF] Target 'drupal/token/1.9.0.0' validated.", $debug);
 
         // Even though we are searching delegated roles for multiple targets, we should see the TUF metadata
         // loaded from the static cache.
-        $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package_metadata.json from static cache.', $debug);
-        $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package.json from static cache.', $debug);
-        // The metadata should actually be *downloaded* twice -- once while the dependency tree is
-        // being solved by Composer, and again when the solved dependencies are actually downloaded
-        // (which is done by Composer effectively re-invoking itself, which results in the static
+        $this->assertStringContainsString('[TUF] Loading http://localhost:8088/1.package_metadata.json from static cache.', $debug);
+        $this->assertStringContainsString('[TUF] Loading http://localhost:8088/1.package.json from static cache.', $debug);
+        // The package metadata should only be *downloaded* once, while the dependency tree is
+        // being solved. The rest of the time, it should be loaded from static cache, or downloaded
+        // only if it's been modified.
+        $this->assertStringContainsStringCount("Downloading http://localhost:8088/1.package_metadata.json\n", $debug, 1);
+        // The actual targets' metadata should be *downloaded* twice -- once while the dependency
+        // tree is being solved, and again when the solved dependencies are actually downloaded
+        // (which is done by Composer effectively re-invoking itself, resulting in the static
         // cache being reset).
         // @see \Composer\Command\RequireCommand::doUpdate()
-        $this->assertStringContainsStringCount('Downloading http://localhost:8080/metadata/1.package_metadata.json', $debug, 2);
-        $this->assertStringContainsStringCount('Downloading http://localhost:8080/metadata/1.package.json', $debug, 2);
+        $this->assertStringContainsStringCount("Downloading http://localhost:8088/1.package.json\n", $debug, 2);
 
         $this->assertDirectoryExists("$vendorDir/drupal/token");
         $this->assertDirectoryExists("$vendorDir/drupal/pathauto");
@@ -186,14 +232,14 @@ class ComposerCommandsTest extends TestCase
         $transportOptions = $lock->findPackage('drupal/token', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
-        $this->assertSame('http://localhost:8080/targets', $transportOptions['tuf']['repository']);
+        $this->assertSame('http://localhost:8086', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $transportOptions['tuf']['target']);
         $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $transportOptions = $lock->findPackage('drupal/pathauto', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
-        $this->assertSame('http://localhost:8080/targets', $transportOptions['tuf']['repository']);
+        $this->assertSame('http://localhost:8086', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/pathauto/1.12.0.0', $transportOptions['tuf']['target']);
         $this->assertNotEmpty($transportOptions['max_file_size']);
 
