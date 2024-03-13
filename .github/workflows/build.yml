@@ -9,8 +9,6 @@ on:
     - cron: '0 4 * * *'
   workflow_dispatch:
 
-env:
-  COMPOSER_FLAGS: "--ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader"
 jobs:
   test:
     name: Test with PHP ${{ matrix.php }}
@@ -31,10 +29,8 @@ jobs:
           tools: composer:v2
           extensions: sodium, json
       - name: Install dependencies
-        run: |
-          composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
-          composer install ${{ env.COMPOSER_FLAGS }}
+        run: composer install
       - name: Run tests
-        run: vendor/bin/phpunit ./tests --debug
+        run: composer test
       - name: Check dependencies for known security vulnerabilities
         run: 'composer audit'
