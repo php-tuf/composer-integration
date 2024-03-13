@@ -209,13 +209,16 @@ class ComposerCommandsTest extends TestCase
         // loaded from the static cache.
         $this->assertStringContainsString('[TUF] Loading http://localhost:8088/1.package_metadata.json from static cache.', $debug);
         $this->assertStringContainsString('[TUF] Loading http://localhost:8088/1.package.json from static cache.', $debug);
-        // The metadata should actually be *downloaded* twice -- once while the dependency tree is
-        // being solved by Composer, and again when the solved dependencies are actually downloaded
-        // (which is done by Composer effectively re-invoking itself, which results in the static
+        // The package metadata should only be *downloaded* once, while the dependency tree is
+        // being solved. The rest of the time, it should be loaded from static cache, or downloaded
+        // only if it's been modified.
+        $this->assertStringContainsStringCount("Downloading http://localhost:8088/1.package_metadata.json\n", $debug, 1);
+        // The actual targets' metadata should be *downloaded* twice -- once while the dependency
+        // tree is being solved, and again when the solved dependencies are actually downloaded
+        // (which is done by Composer effectively re-invoking itself, resulting in the static
         // cache being reset).
         // @see \Composer\Command\RequireCommand::doUpdate()
-        $this->assertStringContainsStringCount('Downloading http://localhost:8088/1.package_metadata.json', $debug, 2);
-        $this->assertStringContainsStringCount('Downloading http://localhost:8088/1.package.json', $debug, 2);
+        $this->assertStringContainsStringCount("Downloading http://localhost:8088/1.package.json\n", $debug, 2);
 
         $this->assertDirectoryExists("$vendorDir/drupal/token");
         $this->assertDirectoryExists("$vendorDir/drupal/pathauto");
