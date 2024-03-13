@@ -14,7 +14,7 @@ use Psr\Http\Message\StreamInterface;
 use Tuf\ComposerIntegration\ComposerFileStorage;
 use Tuf\ComposerIntegration\Loader;
 use Tuf\Exception\DownloadSizeException;
-use Tuf\Exception\RepoFileNotFound;
+use Tuf\Exception\NotFoundException;
 
 /**
  * @covers \Tuf\ComposerIntegration\Loader
@@ -37,7 +37,7 @@ class LoaderTest extends TestCase
         $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128)->wait());
 
         // Any TransportException with a 404 error could should be converted
-        // into a RepoFileNotFound exception.
+        // into a NotFoundException.
         $exception = new TransportException();
         $exception->setStatusCode(404);
         $downloader->get('/metadata/bogus.txt', ['max_file_size' => 11])
@@ -45,9 +45,9 @@ class LoaderTest extends TestCase
             ->shouldBeCalled();
         try {
             $loader->load('bogus.txt', 10);
-            $this->fail('Expected a RepoFileNotFound exception, but none was thrown.');
-        } catch (RepoFileNotFound $e) {
-            $this->assertSame('bogus.txt not found', $e->getMessage());
+            $this->fail('Expected a NotFoundException, but none was thrown.');
+        } catch (NotFoundException $e) {
+            $this->assertSame('File not found: bogus.txt', $e->getMessage());
         }
 
         // A MaxFileSizeExceededException should be converted into a
