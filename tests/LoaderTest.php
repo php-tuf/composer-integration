@@ -9,7 +9,6 @@ use Composer\IO\IOInterface;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
 use PHPUnit\Framework\TestCase;
-use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Http\Message\StreamInterface;
 use Tuf\ComposerIntegration\ComposerFileStorage;
 use Tuf\ComposerIntegration\Loader;
@@ -21,30 +20,36 @@ use Tuf\Exception\RepoFileNotFound;
  */
 class LoaderTest extends TestCase
 {
-    use ProphecyTrait;
-
     public function testLoader(): void
     {
-        $downloader = $this->prophesize(HttpDownloader::class);
-        $io = $this->prophesize(IOInterface::class);
-        $storage = $this->prophesize(ComposerFileStorage::class);
-        $loader = new Loader($downloader->reveal(), $storage->reveal(), $io->reveal(), '/metadata/');
+        $loader = function (HttpDownloader $downloader): Loader {
+            return new Loader(
+              $downloader,
+              $this->createMock(ComposerFileStorage::class),
+              $this->createMock(IOInterface::class),
+              '/metadata/'
+            );
+        };
 
         $url = '/metadata/root.json';
-        $downloader->get($url, ['max_file_size' => 129])
-            ->willReturn(new Response(['url' => $url], 200, [], null))
-            ->shouldBeCalled();
-        $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128)->wait());
+        $downloader = $this->createMock(HttpDownloader::class);
+        $downloader->expects($this->atLeastOnce())
+            ->method('get')
+            ->with($url, ['max_file_size' => 129])
+            ->willReturn(new Response(['url' => $url], 200, [], null));
+        $this->assertInstanceOf(StreamInterface::class, $loader($downloader)->load('root.json', 128)->wait());
 
         // Any TransportException with a 404 error could should be converted
         // into a RepoFileNotFound exception.
         $exception = new TransportException();
         $exception->setStatusCode(404);
-        $downloader->get('/metadata/bogus.txt', ['max_file_size' => 11])
-            ->willThrow($exception)
-            ->shouldBeCalled();
+        $downloader = $this->createMock(HttpDownloader::class);
+        $downloader->expects($this->atLeastOnce())
+            ->method('get')
+            ->with('/metadata/bogus.txt', ['max_file_size' => 11])
+            ->willThrowException($exception);
         try {
-            $loader->load('bogus.txt', 10);
+            $loader($downloader)->load('bogus.txt', 10);
             $this->fail('Expected a RepoFileNotFound exception, but none was thrown.');
         } catch (RepoFileNotFound $e) {
             $this->assertSame('bogus.txt not found', $e->getMessage());
@@ -52,11 +57,13 @@ class LoaderTest extends TestCase
 
         // A MaxFileSizeExceededException should be converted into a
         // DownloadSizeException.
-        $downloader->get('/metadata/too_big.txt', ['max_file_size' => 11])
-            ->willThrow(new MaxFileSizeExceededException())
-            ->shouldBeCalled();
+        $downloader = $this->createMock(HttpDownloader::class);
+        $downloader->expects($this->atLeastOnce())
+            ->method('get')
+            ->with('/metadata/too_big.txt', ['max_file_size' => 11])
+            ->willThrowException(new MaxFileSizeExceededException());
         try {
-            $loader->load('too_big.txt', 10);
+            $loader($downloader)->load('too_big.txt', 10);
             $this->fail('Expected a DownloadSizeException, but none was thrown.');
         } catch (DownloadSizeException $e) {
             $this->assertSame('too_big.txt exceeded 10 bytes', $e->getMessage());
@@ -65,11 +72,13 @@ class LoaderTest extends TestCase
         // Any other TransportException should be wrapped in a
         // \RuntimeException.
         $originalException = new TransportException('Whiskey Tango Foxtrot', -32);
-        $downloader->get('/metadata/wtf.txt', ['max_file_size' => 11])
-            ->willThrow($originalException)
-            ->shouldBeCalled();
+        $downloader = $this->createMock(HttpDownloader::class);
+        $downloader->expects($this->atLeastOnce())
+            ->method('get')
+            ->with('/metadata/wtf.txt', ['max_file_size' => 11])
+            ->willThrowException($originalException);
         try {
-            $loader->load('wtf.txt', 10);
+            $loader($downloader)->load('wtf.txt', 10);
             $this->fail('Expected a RuntimeException, but none was thrown.');
         } catch (\RuntimeException $e) {
             $this->assertSame($originalException->getMessage(), $e->getMessage());
@@ -88,7 +97,7 @@ class LoaderTest extends TestCase
         $method->invoke($storage, 'test', 'Some test data.');
         $modifiedTime = $storage->getModifiedTime('test')->format('D, d M Y H:i:s');
 
-        $downloader = $this->prophesize(HttpDownloader::class);
+        $downloader = $this->createMock(HttpDownloader::class);
         $options = [
             'max_file_size' => 1025,
             'http' => [
@@ -98,14 +107,18 @@ class LoaderTest extends TestCase
             ],
         ];
         $url = '2.test.json';
-        $response = $this->prophesize(Response::class);
-        $response->getStatusCode()->willReturn(304)->shouldBeCalled();
-        $response->getBody()->shouldNotBeCalled();
-        $downloader->get($url, $options)
-            ->willReturn($response->reveal())
-            ->shouldBeCalled();
+        $response = $this->createMock(Response::class);
+        $response->expects($this->atLeastOnce())
+            ->method('getStatusCode')
+            ->willReturn(304);
+        $response->expects($this->never())
+            ->method('getBody');
+        $downloader->expects($this->atLeastOnce())
+            ->method('get')
+            ->with($url, $options)
+            ->willReturn($response);
 
-        $loader = new Loader($downloader->reveal(), $storage, $this->prophesize(IOInterface::class)->reveal());
+        $loader = new Loader($downloader, $storage, $this->createMock(IOInterface::class));
         // Since the response has no actual body data, the fact that we get the contents
         // of the file we wrote here is proof that it was ultimately read from persistent
         // storage by the loader.
@@ -114,16 +127,21 @@ class LoaderTest extends TestCase
 
     public function testStaticCache(): void
     {
-        $response = $this->prophesize(Response::class);
-        $response->getStatusCode()->willReturn(200);
-        $response->getBody()->willReturn('Truly, this is amazing stuff.');
+        $response = $this->createMock(Response::class);
+        $response->expects($this->any())
+            ->method('getStatusCode')
+            ->willReturn(200);
+        $response->expects($this->any())
+            ->method('getBody')
+            ->willReturn('Truly, this is amazing stuff.');
 
-        $downloader = $this->prophesize(HttpDownloader::class);
-        $downloader->get('foo.txt', ['max_file_size' => 1025])
-            ->willReturn($response->reveal())
-            ->shouldBeCalledOnce();
+        $downloader = $this->createMock(HttpDownloader::class);
+        $downloader->expects($this->once())
+            ->method('get')
+            ->with('foo.txt', ['max_file_size' => 1025])
+            ->willReturn($response);
 
-        $loader = new Loader($downloader->reveal(), $this->prophesize(ComposerFileStorage::class)->reveal(), $this->prophesize(IOInterface::class)->reveal());
+        $loader = new Loader($downloader, $this->createMock(ComposerFileStorage::class), $this->createMock(IOInterface::class));
         $stream = $loader->load('foo.txt', 1024)->wait();
 
         // We should be at the beginning of the stream.

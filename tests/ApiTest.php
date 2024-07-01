@@ -14,8 +14,6 @@ use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
 use PHPUnit\Framework\TestCase;
-use Prophecy\Argument;
-use Prophecy\PhpUnit\ProphecyTrait;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\Repository;
 use Tuf\Client\Updater;
@@ -31,8 +29,6 @@ use Tuf\Exception\NotFoundException;
  */
 class ApiTest extends TestCase
 {
-    use ProphecyTrait;
-
     /**
      * The Composer instance under test.
      *
@@ -156,11 +152,12 @@ class ApiTest extends TestCase
             }
         };
 
-        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
-        $updater->getLength('drupal/token/1.9.0.0')
-            ->willReturn(36)
-            ->shouldBeCalled();
-        $this->setUpdater($repository, $updater->reveal());
+        $updater = $this->createMock(ComposerCompatibleUpdater::class);
+        $updater->expects($this->atLeastOnce())
+            ->method('getLength')
+            ->with('drupal/token/1.9.0.0')
+            ->willReturn(36);
+        $this->setUpdater($repository, $updater);
 
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9.0');
         $repository->configurePackageTransportOptions($package);
@@ -176,12 +173,15 @@ class ApiTest extends TestCase
      */
     public function testPostFileDownload(): void
     {
-        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
-        $stream = Argument::type(StreamInterface::class);
-        $updater->verify('packages.json', $stream)->shouldBeCalled();
-        $updater->verify('drupal/token/1.9.0.0', $stream)->shouldBeCalled();
+        $updater = $this->createMock(ComposerCompatibleUpdater::class);
+        $updater->expects($this->atLeast(2))
+            ->method('verify')
+            ->with(
+              $this->callback(fn ($target) => $target ==='packages.json' || $target === 'drupal/token/1.9.0.0'),
+              $this->isInstanceOf(StreamInterface::class),
+            );
 
-        $repository = $this->mockRepository($updater->reveal());
+        $repository = $this->mockRepository($updater);
         $url = $repository->getRepoConfig()['url'];
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
         $package->setTransportOptions([
@@ -200,7 +200,7 @@ class ApiTest extends TestCase
             'metadata',
             [
                 'repository' => $repository,
-                'response' => $this->prophesize(Response::class)->reveal(),
+                'response' => $this->createMock(Response::class),
             ]
         );
         $eventDispatcher->dispatch($event->getName(), $event);
@@ -258,15 +258,13 @@ class ApiTest extends TestCase
      */
     public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
     {
-        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
-        $method = $updater->getLength(urldecode($filename))->shouldBeCalled();
-        if (isset($known_size)) {
-            $method->willReturn($known_size);
-        } else {
-            $method->willThrow(NotFoundException::class);
-        }
+        $updater = $this->createMock(ComposerCompatibleUpdater::class);
+        $updater->expects($this->atLeastOnce())
+            ->method('getLength')
+            ->with(urldecode($filename))
+            ->willReturnCallback(fn () => $known_size ?? throw new NotFoundException());
 
-        $repository = $this->mockRepository($updater->reveal());
+        $repository = $this->mockRepository($updater);
 
         // If the target length is known, it should end up in the transport options.
         $event = new PreFileDownloadEvent(
@@ -311,8 +309,8 @@ class ApiTest extends TestCase
 
     public function testMaxBytesOverride(): void
     {
-        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
-        $this->mockRepository($updater->reveal(), [
+        $updater = $this->createMock(ComposerCompatibleUpdater::class);
+        $this->mockRepository($updater, [
             'url' => 'http://localhost',
             'tuf' => [
                 'max-bytes' => 123,
@@ -337,16 +335,16 @@ class ApiTest extends TestCase
      */
     public function testTargetFromUrl(): void
     {
-        $updater = $this->prophesize(ComposerCompatibleUpdater::class);
+        $updater = $this->createMock(ComposerCompatibleUpdater::class);
 
-        $updater->getLength('packages.json')
-            ->shouldBeCalled()
-            ->willReturn(39);
-        $updater->getLength('another/target.json')
-            ->shouldBeCalled()
-            ->willReturn(59);
+        $updater->expects($this->atLeast(2))
+            ->method('getLength')
+            ->willReturnMap([
+              ['packages.json', 39],
+              ['another/target.json', 59],
+            ]);
 
-        $repository = $this->mockRepository($updater->reveal(), [
+        $repository = $this->mockRepository($updater, [
             'url' => 'http://localhost/repo',
         ]);
         $event = new PreFileDownloadEvent(
