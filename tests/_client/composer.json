@@ -3,11 +3,15 @@
     "description": "Demo of a secured root composer.json",
     "type": "project",
     "repositories": {
+        "vendor": {
+            "type": "composer",
+            "url": "file:///Users/phen/composer-integration/tests/_client/vendor.json"
+        },
         "fixture": {
             "type": "composer",
-            "url": "http://localhost:8080/targets",
+            "url": "http://localhost:8080/_targets",
             "tuf": {
-                "metadata-url": "http://localhost:8080/metadata"
+                "metadata-url": "http://localhost:8080/server"
             }
         },
         "plugin": {

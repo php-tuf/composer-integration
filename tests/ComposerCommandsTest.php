@@ -15,7 +15,7 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ComposerCommandsTest extends TestCase
 {
-    private const CLIENT_DIR = __DIR__ . '/client';
+    private const CLIENT_DIR = __DIR__ . '/_client';
 
     /**
      * The built-in PHP server process.
@@ -34,7 +34,7 @@ class ComposerCommandsTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/server');
+        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__);
         self::$server->start();
         $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
             return str_contains($output, 'Development Server (http://localhost:8080) started');
