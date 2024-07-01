@@ -24,9 +24,9 @@ $fixture->delegate('targets', 'package', [
 // Add more targets here as needed.
 $dir = __DIR__ . '/_targets';
 $fixture->addTarget("$dir/packages.json");
-$fixture->targets['package_metadata']->add("$dir/token.json", 'files/packages/8/p2/drupal/token.json');
-$fixture->targets['package_metadata']->add("$dir/pathauto.json", 'files/packages/8/p2/drupal/pathauto.json');
-$fixture->targets['package']->add("$dir/token-1.9.0.zip", 'drupal/token/1.9.0.0');
-$fixture->targets['package']->add("$dir/pathauto-1.12.0.zip", 'drupal/pathauto/1.12.0.0');
+$fixture->targets['package_metadata']->add("$dir/drupal/token.json", 'drupal/token.json');
+$fixture->targets['package_metadata']->add("$dir/drupal/pathauto.json", 'drupal/pathauto.json');
+$fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
+$fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
 
 $fixture->publish();
