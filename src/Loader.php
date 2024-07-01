@@ -10,7 +10,7 @@ use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Exception\DownloadSizeException;
-use Tuf\Exception\RepoFileNotFound;
+use Tuf\Exception\NotFoundException;
 use Tuf\Loader\LoaderInterface;
 
 /**
@@ -75,7 +75,7 @@ class Loader implements LoaderInterface
             return Create::promiseFor($stream);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
-                throw new RepoFileNotFound("$locator not found");
+                throw new NotFoundException($locator);
             } elseif ($e instanceof MaxFileSizeExceededException) {
                 throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
             } else {
