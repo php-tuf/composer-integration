@@ -30,6 +30,11 @@
             "Tuf\\ComposerIntegration\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Tuf\\ComposerIntegration\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "class": "Tuf\\ComposerIntegration\\Plugin"
     },
