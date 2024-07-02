@@ -39,11 +39,14 @@ the Composer package metadata for them.
 ```
 # Configure Composer to allow the plugin to run.
 composer config allow-plugins.php-tuf/composer-integration true
+
 # Install the plugin.
 composer require php-tuf/composer-integration
-# Enable TUF protection for a repository. For example, if you have a Drupal site,
-# this will probably work:
+
+# Enable TUF protection for a repository defined in composer.json. For example,
+# if you have a Drupal site, the following will probably work.
 composer tuf:protect https://packages.drupal.org/8
-# Install a package with TUF protection!
+
+# Install a package with safety guaranteed by TUF!
 composer require drupal/token
 ```

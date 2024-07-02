@@ -22,7 +22,7 @@ class ComposerCommandsTest extends FunctionalTestBase
 
         // Enable TUF protection at the command line so we know it works.
         $this->assertStringContainsString(
-          "TUF protection enabled for 'http://localhost:8080'.",
+          "http://localhost:8080 is now protected by TUF.",
           $this->composer('tuf:protect', 'fixture')->getOutput(),
         );
     }

@@ -21,7 +21,7 @@ class ProtectCommand extends BaseCommand
         parent::configure();
         $this
           ->setName('tuf:protect')
-          ->setDescription('Adds TUF protection to Composer repositories.')
+          ->setDescription('Adds TUF protection to Composer repositories defined in `composer.json`.')
           ->addArgument('repository', InputArgument::REQUIRED, "The key or URL of the repository to protect.");
     }
 
@@ -32,33 +32,23 @@ class ProtectCommand extends BaseCommand
     {
         $composer = $this->getApplication()->getComposer();
 
-        $repositories = $composer->getPackage()->getRepositories();
+        $file = $composer->getConfig()->getConfigSource()->getName();
+        $file = new JsonFile($file);
+        $data = $file->read();
+        $repositories = $data['repositories'] ?? [];
 
         $key = $input->getArgument('repository');
         foreach ($repositories as $index => $repository) {
             if ($index === $key || $repository['url'] === $key) {
-                $key = $index;
-                break;
+                if ($repository['type'] !== 'composer') {
+                    throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
+                }
+                $data['repositories'][$index]['tuf'] = TRUE;
+                $file->write($data);
+                $output->writeln($repository['url'] . ' is now protected by TUF.');
+                return 0;
             }
         }
-        if (array_key_exists($key, $repositories)) {
-            if ($repositories[$key]['type'] === 'composer') {
-                $repositories[$key]['tuf'] = true;
-            } else {
-                throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
-            }
-
-            $file = $composer->getConfig()->getConfigSource()->getName();
-            $file = new JsonFile($file);
-            $data = $file->read();
-            $data['repositories'] = $repositories;
-            $file->write($data);
-
-            $message = sprintf("TUF protection enabled for '%s'.", $repositories[$key]['url']);
-            $output->writeln($message);
-        } else {
-            throw new \LogicException("The '$key' repository is not defined.");
-        }
-        return 0;
+        throw new \LogicException("The '$key' repository is not defined in " . $file->getPath());
     }
 }
