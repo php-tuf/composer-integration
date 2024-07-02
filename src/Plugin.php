@@ -6,6 +6,8 @@ use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
+use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
+use Composer\Plugin\Capable;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PostFileDownloadEvent;
@@ -15,7 +17,7 @@ use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
 use Composer\Util\Filesystem;
 
-class Plugin implements PluginInterface, EventSubscriberInterface
+class Plugin implements PluginInterface, EventSubscriberInterface, Capable
 {
     /**
      * The repository manager.
@@ -191,4 +193,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     public function deactivate(Composer $composer, IOInterface $io): void
     {
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getCapabilities()
+    {
+        return [
+          CommandProviderCapability::class => CommandProvider::class,
+        ];
+    }
+
 }

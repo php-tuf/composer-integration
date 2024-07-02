@@ -19,6 +19,12 @@ class ComposerCommandsTest extends FunctionalTestBase
         parent::setUp();
         $this->startServer();
         $this->composer('require', 'php-tuf/composer-integration');
+
+        // Enable TUF protection at the command line so we know it works.
+        $this->assertStringContainsString(
+          "TUF protection enabled for 'http://localhost:8080'.",
+          $this->composer('tuf:protect', 'fixture')->getOutput(),
+        );
     }
 
     /**

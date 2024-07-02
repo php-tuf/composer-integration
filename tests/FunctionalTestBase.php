@@ -69,7 +69,7 @@ abstract class FunctionalTestBase extends TestCase
         $this->composer('config', 'allow-plugins.php-tuf/composer-integration', 'true');
         $this->composer('config', 'repositories.packagist.org', 'false');
         $this->composer('config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..'));
-        $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080", "tuf": true}');
+        $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080"}');
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
