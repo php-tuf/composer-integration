@@ -75,11 +75,12 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
-            // Metapackages are special: they contain no code, and don't get
-            // downloaded or installed into the code base at all, and therefore
-            // have nothing to verify with TUF.
+            // If there is no actual file to verify, don't bother. This will be
+            // the case with things like metapackages, which aren't downloaded
+            // into the code base at all.
             // @see https://github.com/composer/composer/blob/11e5237ad9d9e8f29bdc57d946f87c816320d863/doc/07-runtime.md?plain=1#L110
-            if ($context->getType() === 'metapackage') {
+            $fileName = $event->getFileName();
+            if (empty($fileName)) {
                 return;
             }
             // The repository URL is saved in the package's transport options so that
@@ -89,7 +90,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
             if (array_key_exists('tuf', $options)) {
                 $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
                 if ($repository) {
-                    $repository->validatePackage($context, $event->getFileName());
+                    $repository->validatePackage($context, $fileName);
                 }
             }
         }
