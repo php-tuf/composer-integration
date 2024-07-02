@@ -25,18 +25,18 @@ class ComposerCommandsTest extends TestCase
      *
      * @var \Symfony\Component\Process\Process
      */
-    private static Process $server;
+    private Process $server;
 
     /**
      * {@inheritDoc}
      */
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        parent::setUpBeforeClass();
+        parent::setUp();
 
-        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
-        self::$server->start();
-        $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
+        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
+        $this->server->start();
+        $serverStarted = $this->server->waitUntil(function ($outputType, $output): bool {
             return str_contains($output, 'Development Server (http://localhost:8080) started');
         });
         static::assertTrue($serverStarted);
@@ -81,14 +81,14 @@ class ComposerCommandsTest extends TestCase
     /**
      * {@inheritDoc}
      */
-    public static function tearDownAfterClass(): void
+    protected function tearDown(): void
     {
         // Revert changes to composer.json made by ::setUpBeforeClass().
         static::composer('remove', 'php-tuf/composer-integration', '--no-update');
         static::composer('config', '--unset', 'repo.vendor');
 
         // Stop the web server.
-        self::$server->stop();
+        $this->server->stop();
 
         // Delete files and directories created during the test.
         $file_system = new Filesystem();
