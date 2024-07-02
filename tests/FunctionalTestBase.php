@@ -63,13 +63,13 @@ abstract class FunctionalTestBase extends TestCase
         $this->fileSystem->relativeSymlink($fixture->serverDir, "$dir/metadata");
 
         // Generate `composer.json` with the appropriate configuration.
-        $this->composer('init', '--no-interaction', '--stability=dev');
-        $this->composer('config', 'prefer-stable', 'true');
-        $this->composer('config', 'secure-http', 'false');
-        $this->composer('config', 'allow-plugins.php-tuf/composer-integration', 'true');
-        $this->composer('config', 'repositories.packagist.org', 'false');
-        $this->composer('config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..'));
-        $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080", "tuf": true}');
+        $this->composer(['init', '--no-interaction', '--stability=dev']);
+        $this->composer(['config', 'prefer-stable', 'true']);
+        $this->composer(['config', 'secure-http', 'false']);
+        $this->composer(['config', 'allow-plugins.php-tuf/composer-integration', 'true']);
+        $this->composer(['config', 'repositories.packagist.org', 'false']);
+        $this->composer(['config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..')]);
+        $this->composer(['config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080"}']);
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
@@ -98,7 +98,7 @@ abstract class FunctionalTestBase extends TestCase
         }
         $destination = $this->workingDir . '/vendor.json';
         file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        $this->composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
+        $this->composer(['config', 'repo.vendor', 'composer', 'file://' . $destination]);
     }
 
     protected function startServer(): void
@@ -129,23 +129,25 @@ abstract class FunctionalTestBase extends TestCase
     /**
      * Runs Composer in the test project directory.
      *
-     * @param string ...$arguments
+     * @param string[] $arguments
      *   The arguments to pass to Composer.
+     * @param int $expected_exit_code
+     *   (optional) The expected status code when the process completes.
+     *   Defaults to 0.
      *
      * @return Process
      *   The process object.
      */
-    protected function composer(string ...$arguments): Process
+    protected function composer(array $arguments, int $expected_exit_code = 0): Process
     {
         // Ensure the current PHP runtime is used to execute Composer.
         array_unshift($arguments, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
         // Always run in very, very verbose mode.
         $arguments[] = '-vvv';
 
-        $process = (new Process($arguments))
-            ->setWorkingDirectory($this->workingDir)
-            ->mustRun();
-        static::assertSame(0, $process->getExitCode());
+        $process = new Process($arguments, $this->workingDir);
+        $process->run();
+        static::assertSame($expected_exit_code, $process->getExitCode());
         // There should not be any deprecation warnings.
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());

@@ -34,3 +34,19 @@ All root key files must be stored in a directory called `tuf`, adjacent to the p
 
 The TUF repository must track the Composer repository, signing new versions of packages as they are released as well as
 the Composer package metadata for them.
+
+## Usage
+```
+# Configure Composer to allow the plugin to run.
+composer config allow-plugins.php-tuf/composer-integration true
+
+# Install the plugin.
+composer require php-tuf/composer-integration
+
+# Enable TUF protection for a repository defined in composer.json. For example,
+# if you have a Drupal site, the following will probably work.
+composer tuf:protect https://packages.drupal.org/8
+
+# Install a package with safety guaranteed by TUF!
+composer require drupal/token
+```
