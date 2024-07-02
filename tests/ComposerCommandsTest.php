@@ -3,131 +3,22 @@
 namespace Tuf\ComposerIntegration\Tests;
 
 use Composer\Json\JsonFile;
-use Composer\Package\PackageInterface;
 use Composer\Repository\FilesystemRepository;
-use Composer\Util\Filesystem;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\Process\Process;
 use Tuf\ComposerIntegration\TufValidatedComposerRepository;
 
 /**
  * Tests TUF protection when using Composer in an example project.
  */
-class ComposerCommandsTest extends TestCase
+class ComposerCommandsTest extends FunctionalTestBase
 {
-    private const CLIENT_DIR = __DIR__ . '/_client';
-
-    /**
-     * The built-in PHP server process.
-     *
-     * @see ::setUpBeforeClass()
-     * @see ::tearDownAfterClass()
-     *
-     * @var \Symfony\Component\Process\Process
-     */
-    private static Process $server;
-
     /**
      * {@inheritDoc}
      */
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        parent::setUpBeforeClass();
-
-        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
-        self::$server->start();
-        $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
-            return str_contains($output, 'Development Server (http://localhost:8080) started');
-        });
-        static::assertTrue($serverStarted);
-
-        // Create a backup of composer.json that we can restore at the end of the test.
-        // @see ::tearDownAfterClass()
-        copy(self::CLIENT_DIR . '/composer.json', self::CLIENT_DIR . '/composer.json.orig');
-
-        // Create a Composer repository with all the installed vendor
-        // dependencies, so that the test project doesn't need to interact
-        // with the internet.
-        $lock = __DIR__ . '/../composer.lock';
-        static::assertFileIsReadable($lock);
-        $lock = file_get_contents($lock);
-        $lock = json_decode($lock, true);
-        $vendor = [];
-        $packages = array_merge($lock['packages'], $lock['packages-dev']);
-        foreach ($packages as $package) {
-            $name = $package['name'];
-            $dir = __DIR__ . '/../vendor/' . $name;
-            if (is_dir($dir)) {
-                $version = $package['version'];
-                $vendor['packages'][$name][$version] = [
-                    'name' => $name,
-                    'version' => $version,
-                    'type' => $package['type'],
-                    'dist' => [
-                        'type' => 'path',
-                        'url' => $dir,
-                    ],
-                ];
-            }
-        }
-        $destination = self::CLIENT_DIR . '/vendor.json';
-        file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        static::composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
-
-        // Install the plugin.
-        static::composer('require', 'php-tuf/composer-integration');
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public static function tearDownAfterClass(): void
-    {
-        // Revert changes to composer.json made by ::setUpBeforeClass().
-        static::composer('remove', 'php-tuf/composer-integration', '--no-update');
-        static::composer('config', '--unset', 'repo.vendor');
-
-        // Stop the web server.
-        self::$server->stop();
-
-        // Delete files and directories created during the test.
-        $file_system = new Filesystem();
-        foreach (['vendor', 'composer.json', 'composer.lock', 'vendor.json'] as $file) {
-            $file_system->remove(self::CLIENT_DIR . '/' . $file);
-        }
-
-        // Create a backup of composer.json that we can restore at the end of the test.
-        // @see ::tearDownAfterClass()
-        rename(self::CLIENT_DIR . '/composer.json.orig', self::CLIENT_DIR . '/composer.json');
-
-        parent::tearDownAfterClass();
-    }
-
-    /**
-     * Runs Composer in the test project directory.
-     *
-     * @param string ...$command
-     *   The arguments to pass to Composer.
-     *
-     * @return Process
-     *   The process object.
-     */
-    private static function composer(string ...$command): Process
-    {
-        // Ensure the current PHP runtime is used to execute Composer.
-        array_unshift($command, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
-        // Always run in very, very verbose mode.
-        $command[] = '-vvv';
-
-        $process = (new Process($command))
-            ->setWorkingDirectory(self::CLIENT_DIR)
-            ->mustRun();
-        static::assertSame(0, $process->getExitCode());
-        // There should not be any deprecation warnings.
-        static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
-        static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
-
-        return $process;
+        parent::setUp();
+        $this->startServer();
+        $this->composer('require', 'php-tuf/composer-integration');
     }
 
     /**
@@ -135,7 +26,7 @@ class ComposerCommandsTest extends TestCase
      */
     public function testRequireAndRemove(): void
     {
-        $vendorDir = self::CLIENT_DIR . '/vendor';
+        $vendorDir = $this->workingDir . '/vendor';
 
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/token");
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/pathauto");
@@ -179,7 +70,7 @@ class ComposerCommandsTest extends TestCase
 
         // Load the locked package to ensure that the TUF information was saved.
         // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
-        $lock = new JsonFile(self::CLIENT_DIR . '/composer.lock');
+        $lock = new JsonFile($this->workingDir . '/composer.lock');
         $this->assertTrue($lock->exists());
         $lock = new FilesystemRepository($lock);
 
