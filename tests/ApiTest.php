@@ -13,7 +13,6 @@ use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Filesystem;
 use Composer\Util\Http\Response;
-use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 use Tuf\Client\Repository;
 use Tuf\Client\Updater;
@@ -27,7 +26,7 @@ use Tuf\Exception\NotFoundException;
  *
  * @coversDefaultClass \Tuf\ComposerIntegration\Plugin
  */
-class ApiTest extends TestCase
+class ApiTest extends FunctionalTestBase
 {
     /**
      * The Composer instance under test.
@@ -51,9 +50,8 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
-        $dir = __DIR__ . '/_client';
         $factory = new Factory();
-        $this->composer = $factory->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
+        $this->composer = $factory->createComposer(new NullIO(), "$this->workingDir/composer.json", false, $this->workingDir);
 
         // Composer requires the plugin package to be passed to the plugin manager, so load that from the composer.json
         // at the root of the repository.
