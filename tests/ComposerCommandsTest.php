@@ -15,8 +15,6 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ComposerCommandsTest extends TestCase
 {
-    private const CLIENT_DIR = __DIR__ . '/_client';
-
     /**
      * The built-in PHP server process.
      *
@@ -35,7 +33,8 @@ class ComposerCommandsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->workingDir = self::CLIENT_DIR;
+
+        $this->workingDir = __DIR__ . '/_client';
 
         $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
         $this->server->start();
@@ -44,9 +43,14 @@ class ComposerCommandsTest extends TestCase
         });
         static::assertTrue($serverStarted);
 
-        // Create a backup of composer.json that we can restore at the end of the test.
-        // @see ::tearDownAfterClass()
-        copy(self::CLIENT_DIR . '/composer.json', self::CLIENT_DIR . '/composer.json.orig');
+        // Generate `composer.json` with the appropriate configuration.
+        $this->composer('init', '--no-interaction', '--stability=dev');
+        $this->composer('config', 'prefer-stable', 'true');
+        $this->composer('config', 'secure-http', 'false');
+        $this->composer('config', 'allow-plugins.php-tuf/composer-integration', 'true');
+        $this->composer('config', 'repositories.packagist.org', 'false');
+        $this->composer('config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..'));
+        $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080", "tuf": true}');
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
@@ -73,7 +77,7 @@ class ComposerCommandsTest extends TestCase
                 ];
             }
         }
-        $destination = self::CLIENT_DIR . '/vendor.json';
+        $destination = $this->workingDir . '/vendor.json';
         file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         $this->composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
 
@@ -86,24 +90,16 @@ class ComposerCommandsTest extends TestCase
      */
     protected function tearDown(): void
     {
-        // Revert changes to composer.json made by ::setUpBeforeClass().
-        $this->composer('remove', 'php-tuf/composer-integration', '--no-update');
-        $this->composer('config', '--unset', 'repo.vendor');
-
         // Stop the web server.
         $this->server->stop();
 
         // Delete files and directories created during the test.
         $file_system = new Filesystem();
-        foreach (['vendor', 'composer.json', 'composer.lock', 'vendor.json'] as $file) {
-            $file_system->remove(self::CLIENT_DIR . '/' . $file);
+        foreach (['vendor', 'composer.lock', 'vendor.json'] as $file) {
+            $file_system->remove($this->workingDir . '/' . $file);
         }
 
-        // Create a backup of composer.json that we can restore at the end of the test.
-        // @see ::tearDownAfterClass()
-        rename(self::CLIENT_DIR . '/composer.json.orig', self::CLIENT_DIR . '/composer.json');
-
-        parent::tearDownAfterClass();
+        parent::tearDown();
     }
 
     /**
@@ -138,7 +134,7 @@ class ComposerCommandsTest extends TestCase
      */
     public function testRequireAndRemove(): void
     {
-        $vendorDir = self::CLIENT_DIR . '/vendor';
+        $vendorDir = $this->workingDir . '/vendor';
 
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/token");
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/pathauto");
@@ -182,7 +178,7 @@ class ComposerCommandsTest extends TestCase
 
         // Load the locked package to ensure that the TUF information was saved.
         // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
-        $lock = new JsonFile(self::CLIENT_DIR . '/composer.lock');
+        $lock = new JsonFile($this->workingDir . '/composer.lock');
         $this->assertTrue($lock->exists());
         $lock = new FilesystemRepository($lock);
 
