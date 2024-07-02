@@ -21,7 +21,8 @@ class ProtectCommand extends BaseCommand
         parent::configure();
         $this
           ->setName('tuf:protect')
-          ->addArgument('repository', InputArgument::REQUIRED);
+          ->setDescription('Adds TUF protection to Composer repositories.')
+          ->addArgument('repository', InputArgument::REQUIRED, "The key or URL of the repository to protect.");
     }
 
     /**
@@ -44,7 +45,7 @@ class ProtectCommand extends BaseCommand
             if ($repositories[$key]['type'] === 'composer') {
                 $repositories[$key]['tuf'] = true;
             } else {
-                throw new \RuntimeException("TUF can only protected Composer repositories.");
+                throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
             }
 
             $file = $composer->getConfig()->getConfigSource()->getName();
