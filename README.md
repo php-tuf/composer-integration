@@ -36,21 +36,14 @@ The TUF repository must track the Composer repository, signing new versions of p
 the Composer package metadata for them.
 
 ## Usage
-
-A sample TUF-protected Composer repository is included for development purposes. To set it up, first be sure you have
-`pipenv` installed, as per [these instructions](https://github.com/php-tuf/php-tuf#server-environment-setup-for-the-python-tuf-cli).
-Then, run `composer make-fixture`.
-
-An example Composer project that uses the sample TUF repo above is in `test-project`. To invoke Composer such that this
-plugin is used by the example project:
 ```
-# Start a web server on localhost:8080.
-php -S localhost:8080
-cd test-project
+# Configure Composer to allow the plugin to run.
+composer config allow-plugins.php-tuf/composer-integration true
 # Install the plugin.
 composer require php-tuf/composer-integration
-# Install a package with TUF protection! For development purposes, we need
-# to invoke a specific binary of Composer in order to avoid the autoloader
-# getting confused.
-../vendor/composer/composer/bin/composer require drupal/token
+# Enable TUF protection for a repository. For example, if you have a Drupal site,
+# this will probably work:
+composer tuf:protect https://packages.drupal.org/8
+# Install a package with TUF protection!
+composer require drupal/token
 ```
