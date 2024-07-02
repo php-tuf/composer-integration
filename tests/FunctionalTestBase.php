@@ -1,16 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Tuf\ComposerIntegration\Tests;
 
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
-/**
- * @internal
- */
 abstract class FunctionalTestBase extends TestCase
 {
     /**
@@ -106,8 +101,11 @@ abstract class FunctionalTestBase extends TestCase
      *
      * @param string ...$arguments
      *   The arguments to pass to Composer.
+     *
+     * @return Process
+     *   The process object.
      */
-    protected function composer(string ...$arguments): void
+    protected function composer(string ...$arguments): Process
     {
         // Ensure the current PHP runtime is used to execute Composer.
         array_unshift($arguments, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
@@ -121,5 +119,7 @@ abstract class FunctionalTestBase extends TestCase
         // There should not be any deprecation warnings.
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
+
+        return $process;
     }
 }
