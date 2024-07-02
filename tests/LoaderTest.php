@@ -52,7 +52,7 @@ class LoaderTest extends TestCase
             $loader($downloader)->load('bogus.txt', 10);
             $this->fail('Expected a NotFoundException, but none was thrown.');
         } catch (NotFoundException $e) {
-            $this->assertSame('bogus.txt not found', $e->getMessage());
+            $this->assertSame('Item not found: bogus.txt', $e->getMessage());
         }
 
         // A MaxFileSizeExceededException should be converted into a

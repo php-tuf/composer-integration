@@ -1,1 +1,1 @@
-{"packages": [],"metadata-url": "/_targets/%package%.json","available-package-regexes":["drupal/*"]}
+{"packages": [],"metadata-url": "/%package%.json","available-package-regexes":["drupal/*"]}

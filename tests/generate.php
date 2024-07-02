@@ -15,10 +15,10 @@ $fixture->root->consistentSnapshot = true;
 
 // Create delegated roles and add their keys.
 $fixture->delegate('targets', 'package_metadata', [
-  'paths' => ['files/packages/8/p2/*'],
+  'paths' => ['drupal/*.json'],
 ]);
 $fixture->delegate('targets', 'package', [
-  'paths' => ['drupal/*'],
+  'paths' => ['drupal/*/*'],
 ]);
 
 // Add more targets here as needed.
@@ -30,3 +30,4 @@ $fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
 $fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
 
 $fixture->publish();
+rename($fixture->serverDir, __DIR__ . '/_targets/metadata');

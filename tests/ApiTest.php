@@ -51,7 +51,7 @@ class ApiTest extends TestCase
         parent::setUp();
         $this->plugin = new Plugin();
 
-        $dir = __DIR__ . '/client';
+        $dir = __DIR__ . '/_client';
         $factory = new Factory();
         $this->composer = $factory->createComposer(new NullIO(), "$dir/composer.json", false, $dir);
 
