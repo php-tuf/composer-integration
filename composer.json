@@ -38,12 +38,7 @@
         "symfony/process": "^6"
     },
     "scripts": {
-        "make-fixture": [
-            "rm -rf ./tests/_targets/metadata",
-            "@php tests/generate.php"
-        ],
         "test": [
-            "@composer make-fixture",
             "phpunit ./tests --debug"
         ]
     }
