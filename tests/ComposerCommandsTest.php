@@ -15,7 +15,7 @@ use Tuf\ComposerIntegration\TufValidatedComposerRepository;
  */
 class ComposerCommandsTest extends TestCase
 {
-    private const CLIENT_DIR = __DIR__ . '/client';
+    private const CLIENT_DIR = __DIR__ . '/_client';
 
     /**
      * The built-in PHP server process.
@@ -34,7 +34,7 @@ class ComposerCommandsTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/server');
+        self::$server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
         self::$server->start();
         $serverStarted = self::$server->waitUntil(function ($outputType, $output): bool {
             return str_contains($output, 'Development Server (http://localhost:8080) started');
@@ -145,19 +145,19 @@ class ComposerCommandsTest extends TestCase
         $debug = $this->composer('require', 'drupal/pathauto', '--with-all-dependencies', '-vvv')
             ->getErrorOutput();
         $this->assertStringContainsString('TUF integration enabled.', $debug);
-        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080/targets loaded from ', $debug);
-        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080/targets are verified by TUF.', $debug);
+        $this->assertStringContainsString('[TUF] Root metadata for http://localhost:8080 loaded from ', $debug);
+        $this->assertStringContainsString('[TUF] Packages from http://localhost:8080 are verified by TUF.', $debug);
         $this->assertStringContainsString('[TUF] Metadata source: http://localhost:8080/metadata/', $debug);
-        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 120 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'packages.json' limited to 92 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'packages.json' validated.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/pathauto.json' limited to 1610 bytes.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/pathauto.json' validated.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' limited to 1330 bytes.", $debug);
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto.json' limited to 1610 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token.json' limited to 1330 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token.json' validated.", $debug);
         // token~dev.json doesn't exist, so the plugin will limit it to a hard-coded maximum
         // size, and there should not be a message saying that it was validated.
-        $this->assertStringContainsString("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
-        $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'files/packages/8/p2/drupal/token~dev.json' validated.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
+        $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/token~dev.json' validated.", $debug);
         // The plugin won't report the maximum download size of package targets; instead, that
         // information will be stored in the transport options saved to the lock file.
         $this->assertStringContainsString("[TUF] Target 'drupal/token/1.9.0.0' validated.", $debug);
@@ -186,14 +186,14 @@ class ComposerCommandsTest extends TestCase
         $transportOptions = $lock->findPackage('drupal/token', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
-        $this->assertSame('http://localhost:8080/targets', $transportOptions['tuf']['repository']);
+        $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $transportOptions['tuf']['target']);
         $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $transportOptions = $lock->findPackage('drupal/pathauto', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
-        $this->assertSame('http://localhost:8080/targets', $transportOptions['tuf']['repository']);
+        $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/pathauto/1.12.0.0', $transportOptions['tuf']['target']);
         $this->assertNotEmpty($transportOptions['max_file_size']);
 
