@@ -9,14 +9,14 @@ use Symfony\Component\Process\Process;
 abstract class FunctionalTestBase extends TestCase
 {
     /**
-     * The built-in PHP server process.
+     * The built-in PHP server process, if there is one.
      *
-     * @see ::setUp()
+     * @see ::startServer()
      * @see ::tearDown()
      *
-     * @var \Symfony\Component\Process\Process
+     * @var \Symfony\Component\Process\Process|null
      */
-    private Process $server;
+    private ?Process $server = NULL;
 
     protected string $workingDir;
 
@@ -29,13 +29,6 @@ abstract class FunctionalTestBase extends TestCase
 
         $this->workingDir = uniqid(sys_get_temp_dir() . '/');
         mkdir($this->workingDir . '/tuf', recursive: true);
-
-        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
-        $this->server->start();
-        $serverStarted = $this->server->waitUntil(function ($outputType, $output): bool {
-            return str_contains($output, 'Development Server (http://localhost:8080) started');
-        });
-        static::assertTrue($serverStarted);
 
         // Generate `composer.json` with the appropriate configuration.
         $this->composer('init', '--no-interaction', '--stability=dev');
@@ -79,13 +72,23 @@ abstract class FunctionalTestBase extends TestCase
         $this->composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
     }
 
+    protected function startServer(): void
+    {
+        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
+        $this->server->start();
+        $serverStarted = $this->server->waitUntil(function ($outputType, $output): bool {
+            return str_contains($output, 'Development Server (http://localhost:8080) started');
+        });
+        static::assertTrue($serverStarted);
+    }
+
     /**
      * {@inheritDoc}
      */
     protected function tearDown(): void
     {
         // Stop the web server.
-        $this->server->stop();
+        $this->server?->stop();
 
         // Delete the fake project created for the test.
         (new Filesystem())->remove($this->workingDir);

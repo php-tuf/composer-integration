@@ -17,6 +17,7 @@ class ComposerCommandsTest extends FunctionalTestBase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->startServer();
         $this->composer('require', 'php-tuf/composer-integration');
     }
 
