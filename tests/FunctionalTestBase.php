@@ -2,9 +2,11 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
+use Composer\Autoload\ClassLoader;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
+use Tuf\Tests\FixtureBuilder\Fixture;
 
 abstract class FunctionalTestBase extends TestCase
 {
@@ -18,7 +20,11 @@ abstract class FunctionalTestBase extends TestCase
      */
     private ?Process $server = NULL;
 
+    private Filesystem $fileSystem;
+
     protected string $workingDir;
+
+    protected const SERVER_ROOT = __DIR__ . '/server_root';
 
     /**
      * {@inheritDoc}
@@ -26,9 +32,35 @@ abstract class FunctionalTestBase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->fileSystem = new Filesystem();
 
         $this->workingDir = uniqid(sys_get_temp_dir() . '/');
         mkdir($this->workingDir . '/tuf', recursive: true);
+
+        // Make PHP-TUF's fixture builder available.
+        $loaders = ClassLoader::getRegisteredLoaders();
+        reset($loaders)->addPsr4('Tuf\\Tests\\', key($loaders) . '/php-tuf/php-tuf/tests');
+
+        // Generate the fixture.
+        $fixture = new Fixture($this->workingDir);
+        $fixture->root->consistentSnapshot = true;
+        $fixture->delegate('targets', 'package_metadata', [
+          'paths' => ['drupal/*.json'],
+        ]);
+        $fixture->delegate('targets', 'package', [
+          'paths' => ['drupal/*/*'],
+        ]);
+        $dir = static::SERVER_ROOT;
+        $fixture->addTarget("$dir/packages.json");
+        $fixture->targets['package_metadata']->add("$dir/drupal/token.json", 'drupal/token.json');
+        $fixture->targets['package_metadata']->add("$dir/drupal/pathauto.json", 'drupal/pathauto.json');
+        $fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
+        $fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
+        $fixture->publish();
+        // Copy the root metadata into the working directory.
+        copy($fixture->serverDir . '/root.json', $this->workingDir . '/tuf/localhost.json');
+        // Symlink all the other metadata into the root directory of the web server.
+        $this->fileSystem->relativeSymlink($fixture->serverDir, "$dir/metadata");
 
         // Generate `composer.json` with the appropriate configuration.
         $this->composer('init', '--no-interaction', '--stability=dev');
@@ -38,9 +70,6 @@ abstract class FunctionalTestBase extends TestCase
         $this->composer('config', 'repositories.packagist.org', 'false');
         $this->composer('config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..'));
         $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080", "tuf": true}');
-
-        // Copy the root metadata into the working directory.
-        copy(__DIR__ . '/_targets/metadata/root.json', $this->workingDir . '/tuf/localhost.json');
 
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
@@ -74,7 +103,7 @@ abstract class FunctionalTestBase extends TestCase
 
     protected function startServer(): void
     {
-        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
+        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], static::SERVER_ROOT);
         $this->server->start();
         $serverStarted = $this->server->waitUntil(function ($outputType, $output): bool {
             return str_contains($output, 'Development Server (http://localhost:8080) started');
@@ -91,7 +120,8 @@ abstract class FunctionalTestBase extends TestCase
         $this->server?->stop();
 
         // Delete the fake project created for the test.
-        (new Filesystem())->remove($this->workingDir);
+        $this->fileSystem->remove($this->workingDir);
+        $this->fileSystem->unlink(static::SERVER_ROOT . '/metadata');
 
         parent::tearDown();
     }

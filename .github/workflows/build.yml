@@ -34,8 +34,6 @@ jobs:
         run: |
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
           composer install ${{ env.COMPOSER_FLAGS }}
-      - name: Generate fixture
-        run: composer make-fixture
       - name: Run tests
         run: vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities
