@@ -41,8 +41,7 @@
     "scripts": {
         "make-fixture": [
             "rm -rf ./tests/_targets/metadata",
-            "@php tests/generate.php",
-            "cp -f ./tests/_targets/metadata/root.json ./tests/_client/tuf/localhost.json"
+            "@php tests/generate.php"
         ],
         "test": [
             "@composer make-fixture",

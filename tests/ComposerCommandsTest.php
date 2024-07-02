@@ -52,6 +52,9 @@ class ComposerCommandsTest extends TestCase
         $this->composer('config', 'repositories.plugin', 'path', realpath(__DIR__ . '/..'));
         $this->composer('config', 'repositories.fixture', '{"type": "composer", "url": "http://localhost:8080", "tuf": true}');
 
+        // Copy the root metadata into the working directory.
+        copy(__DIR__ . '/_targets/metadata/root.json', $this->workingDir . '/tuf/localhost.json');
+
         // Create a Composer repository with all the installed vendor
         // dependencies, so that the test project doesn't need to interact
         // with the internet.
