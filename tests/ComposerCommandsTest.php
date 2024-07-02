@@ -18,8 +18,8 @@ class ComposerCommandsTest extends TestCase
     /**
      * The built-in PHP server process.
      *
-     * @see ::setUpBeforeClass()
-     * @see ::tearDownAfterClass()
+     * @see ::setUp()
+     * @see ::tearDown()
      *
      * @var \Symfony\Component\Process\Process
      */
@@ -34,7 +34,8 @@ class ComposerCommandsTest extends TestCase
     {
         parent::setUp();
 
-        $this->workingDir = __DIR__ . '/_client';
+        $this->workingDir = uniqid(sys_get_temp_dir() . '/');
+        mkdir($this->workingDir . '/tuf', recursive: true);
 
         $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
         $this->server->start();
@@ -98,9 +99,7 @@ class ComposerCommandsTest extends TestCase
 
         // Delete files and directories created during the test.
         $file_system = new Filesystem();
-        foreach (['vendor', 'composer.lock', 'vendor.json'] as $file) {
-            $file_system->remove($this->workingDir . '/' . $file);
-        }
+        $file_system->remove($this->workingDir);
 
         parent::tearDown();
     }
