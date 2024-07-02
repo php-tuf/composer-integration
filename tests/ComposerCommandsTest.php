@@ -27,12 +27,15 @@ class ComposerCommandsTest extends TestCase
      */
     private Process $server;
 
+    private string $workingDir;
+
     /**
      * {@inheritDoc}
      */
     protected function setUp(): void
     {
         parent::setUp();
+        $this->workingDir = self::CLIENT_DIR;
 
         $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], __DIR__ . '/_targets');
         $this->server->start();
@@ -72,10 +75,10 @@ class ComposerCommandsTest extends TestCase
         }
         $destination = self::CLIENT_DIR . '/vendor.json';
         file_put_contents($destination, json_encode($vendor, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        static::composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
+        $this->composer('config', 'repo.vendor', 'composer', 'file://' . $destination);
 
         // Install the plugin.
-        static::composer('require', 'php-tuf/composer-integration');
+        $this->composer('require', 'php-tuf/composer-integration');
     }
 
     /**
@@ -84,8 +87,8 @@ class ComposerCommandsTest extends TestCase
     protected function tearDown(): void
     {
         // Revert changes to composer.json made by ::setUpBeforeClass().
-        static::composer('remove', 'php-tuf/composer-integration', '--no-update');
-        static::composer('config', '--unset', 'repo.vendor');
+        $this->composer('remove', 'php-tuf/composer-integration', '--no-update');
+        $this->composer('config', '--unset', 'repo.vendor');
 
         // Stop the web server.
         $this->server->stop();
@@ -112,7 +115,7 @@ class ComposerCommandsTest extends TestCase
      * @return Process
      *   The process object.
      */
-    private static function composer(string ...$command): Process
+    private function composer(string ...$command): Process
     {
         // Ensure the current PHP runtime is used to execute Composer.
         array_unshift($command, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
@@ -120,7 +123,7 @@ class ComposerCommandsTest extends TestCase
         $command[] = '-vvv';
 
         $process = (new Process($command))
-            ->setWorkingDirectory(self::CLIENT_DIR)
+            ->setWorkingDirectory($this->workingDir)
             ->mustRun();
         static::assertSame(0, $process->getExitCode());
         // There should not be any deprecation warnings.
