@@ -75,6 +75,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
+            // Metapackages are special: they contain no code, and don't get
+            // downloaded or installed into the code base at all, and therefore
+            // have nothing to verify with TUF.
+            // @see https://github.com/composer/composer/blob/11e5237ad9d9e8f29bdc57d946f87c816320d863/doc/07-runtime.md?plain=1#L110
+            if ($context->getType() === 'metapackage') {
+                return;
+            }
             // The repository URL is saved in the package's transport options so that
             // it will persist even when loaded from the lock file.
             // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
