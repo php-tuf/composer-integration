@@ -6,10 +6,11 @@ use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
+use GuzzleHttp\Promise\Create;
+use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
-use Psr\Http\Message\StreamInterface;
 use Tuf\Exception\DownloadSizeException;
-use Tuf\Exception\RepoFileNotFound;
+use Tuf\Exception\NotFoundException;
 use Tuf\Loader\LoaderInterface;
 
 /**
@@ -32,7 +33,7 @@ class Loader implements LoaderInterface
     /**
      * {@inheritDoc}
      */
-    public function load(string $locator, int $maxBytes): StreamInterface
+    public function load(string $locator, int $maxBytes): PromiseInterface
     {
         $url = $this->baseUrl . $locator;
         if (array_key_exists($url, $this->cache)) {
@@ -42,7 +43,7 @@ class Loader implements LoaderInterface
             // The underlying stream should always be seekable.
             assert($cachedStream->isSeekable());
             $cachedStream->rewind();
-            return $cachedStream;
+            return Create::promiseFor($cachedStream);
         }
 
         $options = [
@@ -65,7 +66,7 @@ class Loader implements LoaderInterface
             $response = $this->downloader->get($url, $options);
         } catch (TransportException $e) {
             if ($e->getStatusCode() === 404) {
-                throw new RepoFileNotFound("$locator not found");
+                throw new NotFoundException($locator);
             } elseif ($e instanceof MaxFileSizeExceededException) {
                 throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
             } else {
@@ -74,20 +75,20 @@ class Loader implements LoaderInterface
         }
 
         // If we sent an If-Modified-Since header and received a 304 (Not Modified)
-        // response, we can just load the file from persistent storage.
+        // response, we can just load the file from cache.
         if ($response->getStatusCode() === 304) {
             $content = Utils::tryFopen($this->storage->toPath($name), 'r');
         } else {
             // To prevent the static cache from running out of memory, write the response
             // contents to a temporary stream (which will turn into a temporary file once
-            // we've written 1024 bytes to it), which will be automatically cleaned up
-            // when it is garbage collected.
+            // once we've written 1024 bytes to it), which will be automatically cleaned
+            // up when it is garbage collected.
             $content = Utils::tryFopen('php://temp/maxmemory:1024', 'r+');
             fwrite($content, $response->getBody());
         }
 
         $stream = $this->cache[$url] = Utils::streamFor($content);
         $stream->rewind();
-        return $stream;
+        return Create::promiseFor($stream);
     }
 }

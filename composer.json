@@ -21,8 +21,8 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "composer-plugin-api": "^2.2",
-        "php-tuf/php-tuf": "dev-main",
+        "composer-plugin-api": "^2.6",
+        "php-tuf/php-tuf": "0.1.4",
         "guzzlehttp/psr7": "^2.4"
     },
     "autoload": {
@@ -36,15 +36,13 @@
     "require-dev": {
         "composer/composer": "^2.1",
         "phpunit/phpunit": "^9.5",
-        "phpspec/prophecy-phpunit": "^2.0",
         "symfony/process": "^6"
     },
     "scripts": {
         "make-fixture": [
-            "@putenv PIPENV_PIPFILE=./vendor/php-tuf/php-tuf/Pipfile",
-            "pipenv install",
-            "pipenv run python ./tests/server/generate.py",
-            "cp -f ./tests/server/metadata/root.json ./tests/client/tuf/localhost.json"
+            "rm -rf ./tests/_targets/metadata",
+            "@php tests/generate.php",
+            "cp -f ./tests/_targets/metadata/root.json ./tests/_client/tuf/localhost.json"
         ],
         "test": [
             "@composer make-fixture",
