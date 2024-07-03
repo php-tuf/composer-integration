@@ -97,9 +97,8 @@ class Loader implements LoaderInterface
 
     private static function versionHeader(): string
     {
-        // @todo The spec version should come from a constant in PHP-TUF itself.
         return sprintf(
-          'X-PHP-TUF: spec=1.0.33; client=%s; plugin=%s',
+          'X-PHP-TUF: client=%s; plugin=%s',
           InstalledVersions::getVersion('php-tuf/php-tuf'),
           InstalledVersions::getVersion('php-tuf/composer-integration'),
         );
