@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration\Tests;
 use Composer\Config;
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
-use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
