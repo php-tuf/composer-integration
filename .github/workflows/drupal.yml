@@ -16,10 +16,14 @@ jobs:
       fail-fast: false
       max-parallel: 10
       matrix:
-        php: ['8.1', '8.2', '8.3']
+        php: [8.1, 8.2, 8.3]
         template:
           - recommended-project
           - legacy-project
+        core_version:
+          - ^10
+          - ^11
+    if: ${{ matrix.core_version == "^10" || ( matrix.core_version == "^11" && matrix.php >= 8.3 ) }}
 
     steps:
       - name: Checkout self
@@ -35,7 +39,7 @@ jobs:
 
       - name: Create Drupal project
         run: |
-          composer create-project drupal/${{ matrix.template }} project
+          composer create-project drupal/${{ matrix.template }}:${{ matrix.core_version }} project
           cd project
           composer config --no-plugins allow-plugins.php-tuf/composer-integration true
           composer config repositories.local path ../composer-integration
