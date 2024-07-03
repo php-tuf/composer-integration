@@ -1,4 +1,4 @@
-name: Drupal recommended-project Compatibility
+name: Drupal project compatibility
 
 on:
   push:
@@ -10,7 +10,16 @@ on:
 
 jobs:
   composer-project:
+    name: ${{ matrix.template }} on PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+        template:
+          - recommended-project
+          - legacy-project
 
     steps:
       - name: Checkout self
@@ -21,17 +30,14 @@ jobs:
       - name: Install PHP and Composer
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
 
       - name: Create Drupal Project
         run: |
-          composer create-project drupal/recommended-project project_name
-          cd project_name
-          # Set dev stability to allow for php-tuf/php-tuf to be installed.
-          composer config minimum-stability dev
+          composer create-project drupal/${{ matrix.template }} project
+          cd project
           composer config --no-plugins allow-plugins.php-tuf/composer-integration true
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
-          composer config repositories.vcs-php-tuf vcs https://github.com/php-tuf/php-tuf.git
           composer config repositories.local path ../composer-integration
           composer require php-tuf/composer-integration:@dev --with-all-dependencies
