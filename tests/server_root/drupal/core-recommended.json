@@ -21,8 +21,9 @@
                 },
                 "time": "2024-06-20T18:58:42+00:00",
                 "require": {
-                    "ext/json": "*"
-                }
+                    "drupal/pathauto": "*"
+                },
+                "type": "metapackage"
             }
         ]
     }
