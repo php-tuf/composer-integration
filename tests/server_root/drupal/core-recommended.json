@@ -1,0 +1,65 @@
+{
+    "package": {
+        "name": "drupal\/core-recommended",
+        "description": "Locked core dependencies; require this project INSTEAD OF drupal\/core.",
+        "time": "2019-08-28T21:29:47+00:00",
+        "maintainers": [
+            {
+                "name": "Drupal-Infrastructure",
+                "avatar_url": "https:\/\/www.gravatar.com\/avatar\/8160d31bfc9bc0bcc259441094df858f?d=identicon"
+            }
+        ],
+        "versions": {
+            "10.3.0": {
+                "name": "drupal\/core-recommended",
+                "description": "Core and its dependencies with known-compatible minor versions. Require this project INSTEAD OF drupal\/core.",
+                "keywords": [],
+                "homepage": "",
+                "version": "10.3.0",
+                "version_normalized": "10.3.0.0",
+                "license": [
+                    "GPL-2.0-or-later"
+                ],
+                "authors": [],
+                "source": {
+                    "url": "https:\/\/github.com\/drupal\/core-recommended.git",
+                    "type": "git",
+                    "reference": "991f849f74e585597b1f7b11daf9acf79b546939"
+                },
+                "dist": {
+                    "url": "https:\/\/api.github.com\/repos\/drupal\/core-recommended\/zipball\/991f849f74e585597b1f7b11daf9acf79b546939",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "991f849f74e585597b1f7b11daf9acf79b546939"
+                },
+                "type": "metapackage",
+                "support": {
+                    "source": "https:\/\/github.com\/drupal\/core-recommended\/tree\/10.3.0"
+                },
+                "funding": [],
+                "time": "2024-06-20T18:58:42+00:00",
+                "require": {
+                    "ext\/json": "*"
+                },
+                "conflict": {
+                    "webflo\/drupal-core-strict": "*"
+                }
+            }
+        },
+        "type": "metapackage",
+        "repository": "https:\/\/github.com\/drupal\/core-recommended",
+        "github_stars": 66,
+        "github_watchers": 15,
+        "github_forks": 29,
+        "github_open_issues": 2,
+        "language": null,
+        "dependents": 332,
+        "suggesters": 0,
+        "downloads": {
+            "total": 23035352,
+            "monthly": 761963,
+            "daily": 28816
+        },
+        "favers": 71
+    }
+}
