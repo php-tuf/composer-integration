@@ -75,14 +75,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
                 $context['repository']->validateMetadata($event->getUrl(), $context['response']);
             }
         } elseif ($type === 'package') {
-            // If there is no actual file to verify, don't bother. This will be
-            // the case with things like metapackages, which aren't downloaded
-            // into the code base at all.
-            // @see https://github.com/composer/composer/blob/11e5237ad9d9e8f29bdc57d946f87c816320d863/doc/07-runtime.md?plain=1#L110
-            $fileName = $event->getFileName();
-            if (empty($fileName)) {
-                return;
-            }
             // The repository URL is saved in the package's transport options so that
             // it will persist even when loaded from the lock file.
             // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
@@ -90,7 +82,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
             if (array_key_exists('tuf', $options)) {
                 $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
                 if ($repository) {
-                    $repository->validatePackage($context, $fileName);
+                    $repository->validatePackage($context, $event->getFileName());
                 }
             }
         }
