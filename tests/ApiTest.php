@@ -354,13 +354,13 @@ class ApiTest extends FunctionalTestBase
                 'repository' => $repository,
             ]
         );
-        $repository->prepareMetadata($event);
+        $repository->prepareComposerMetadata($event);
         $this->assertSame(39, $event->getTransportOptions()['max_file_size']);
 
         // If the URL of the metadata doesn't start with the repository URL,
         // we should fall back to using the URL's path component as the target.
         $event->setProcessedUrl('http://localhost/another/target.json');
-        $repository->prepareMetadata($event);
+        $repository->prepareComposerMetadata($event);
         $this->assertSame(59, $event->getTransportOptions()['max_file_size']);
     }
 }
