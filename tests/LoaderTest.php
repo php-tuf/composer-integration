@@ -151,21 +151,15 @@ class LoaderTest extends TestCase
 
     private function mockOptions(int $expectedSize, ?\DateTimeInterface $modifiedTime = null): object
     {
-        $subset = [
-          'max_file_size' => $expectedSize,
-            'http' => [
-              'header' => [
-                sprintf(
-                  'X-PHP-TUF: spec=1.0.33; client=%s; plugin=%s',
-                  InstalledVersions::getVersion('php-tuf/php-tuf'),
-                  InstalledVersions::getVersion('php-tuf/composer-integration'),
-                ),
-              ],
-            ],
-        ];
+        $options = ['max_file_size' => $expectedSize];
+        $options['http']['header'][] = sprintf(
+          'X-PHP-TUF: spec=1.0.33; client=%s; plugin=%s',
+          InstalledVersions::getVersion('php-tuf/php-tuf'),
+          InstalledVersions::getVersion('php-tuf/composer-integration'),
+        );
         if ($modifiedTime) {
             $subset['http']['header'][] = "If-Modified-Since: " . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
         }
-        return new ArraySubset($subset);
+        return new ArraySubset($options);
     }
 }
