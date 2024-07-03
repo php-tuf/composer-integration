@@ -1,4 +1,4 @@
-name: Drupal project compatibility
+name: Drupal compatibility
 
 on:
   push:
@@ -33,11 +33,10 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: composer:v2
 
-      - name: Create Drupal Project
+      - name: Create Drupal project
         run: |
           composer create-project drupal/${{ matrix.template }} project
           cd project
           composer config --no-plugins allow-plugins.php-tuf/composer-integration true
-          composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
           composer config repositories.local path ../composer-integration
           composer require php-tuf/composer-integration:@dev --with-all-dependencies
