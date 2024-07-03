@@ -1,0 +1,30 @@
+{
+    "packages": {
+        "drupal/core-recommended": [
+            {
+                "name": "drupal/core-recommended",
+                "version": "10.3.0",
+                "version_normalized": "10.3.0.0",
+                "source": {
+                    "url": "https://github.com/drupal/core-recommended.git",
+                    "type": "git",
+                    "reference": "991f849f74e585597b1f7b11daf9acf79b546939"
+                },
+                "dist": {
+                    "url": "https://api.github.com/repos/drupal/core-recommended/zipball/991f849f74e585597b1f7b11daf9acf79b546939",
+                    "type": "zip",
+                    "shasum": "",
+                    "reference": "991f849f74e585597b1f7b11daf9acf79b546939"
+                },
+                "support": {
+                    "source": "https://github.com/drupal/core-recommended/tree/10.3.0"
+                },
+                "time": "2024-06-20T18:58:42+00:00",
+                "require": {
+                    "drupal/pathauto": "*"
+                },
+                "type": "metapackage"
+            }
+        ]
+    }
+}

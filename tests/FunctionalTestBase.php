@@ -54,6 +54,9 @@ abstract class FunctionalTestBase extends TestCase
         $fixture->addTarget("$dir/packages.json");
         $fixture->targets['package_metadata']->add("$dir/drupal/token.json", 'drupal/token.json');
         $fixture->targets['package_metadata']->add("$dir/drupal/pathauto.json", 'drupal/pathauto.json');
+        // Add a metapackage so we can test that we don't try to verify packages
+        // that don't install any files of their own.
+        $fixture->targets['package_metadata']->add("$dir/drupal/core-recommended.json", 'drupal/core-recommended.json');
         $fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
         $fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
         $fixture->publish();

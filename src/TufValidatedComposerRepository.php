@@ -164,7 +164,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             'repository' => $config['url'],
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
-        if ($this->isTufEnabled()) {
+        if ($this->isTufEnabled($package)) {
             $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
         }
         $package->setTransportOptions($options);
@@ -173,12 +173,18 @@ class TufValidatedComposerRepository extends ComposerRepository
     /**
      * Indicates if TUF is enabled for this repository.
      *
+     * @param \Composer\Package\PackageInterface|null $package
+     *   A specific package being validated, if any.
+     *
      * @return bool
      *   Whether PHP-TUF is enabled for this repository.
      */
-    private function isTufEnabled(): bool
+    private function isTufEnabled(?PackageInterface $package = null): bool
     {
-        return $this->updater instanceof ComposerCompatibleUpdater;
+        // Metapackages are not downloaded into the code base at all, so don't
+        // bother validating them.
+        // @see https://github.com/composer/composer/blob/11e5237ad9d9e8f29bdc57d946f87c816320d863/doc/07-runtime.md?plain=1#L110
+        return $this->updater instanceof ComposerCompatibleUpdater && $package?->getType() !== 'metapackage';
     }
 
     /**
@@ -263,7 +269,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      */
     public function validatePackage(PackageInterface $package, string $filename): void
     {
-        if ($this->isTufEnabled()) {
+        if ($this->isTufEnabled($package)) {
             $options = $package->getTransportOptions();
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
