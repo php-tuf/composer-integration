@@ -152,7 +152,12 @@ class LoaderTest extends TestCase
     private function mockOptions(int $expectedSize, ?\DateTimeInterface $modifiedTime = null): object
     {
         $options = ['max_file_size' => $expectedSize];
-        $options['http']['header'][] = Loader::versionHeader();
+
+        // There's no real reason to expose versionHeader() to the world, so
+        // it's okay to use reflection here.
+        $method = new \ReflectionMethod(Loader::class, 'versionHeader');
+        $options['http']['header'][] = $method->invoke(null);
+
         if ($modifiedTime) {
             $options['http']['header'][] = "If-Modified-Since: " . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
         }

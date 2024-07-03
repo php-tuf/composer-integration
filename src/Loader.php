@@ -95,7 +95,7 @@ class Loader implements LoaderInterface
         return Create::promiseFor($stream);
     }
 
-    public static function versionHeader(): string
+    private static function versionHeader(): string
     {
         // @todo The spec version should come from a constant in PHP-TUF itself.
         return sprintf(
