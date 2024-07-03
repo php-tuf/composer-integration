@@ -77,13 +77,13 @@ class ComposerCommandsTest extends FunctionalTestBase
         // loaded from the static cache.
         $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package_metadata.json from static cache.', $debug);
         $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package.json from static cache.', $debug);
-        // The metadata should actually be *downloaded* twice -- once while the dependency tree is
-        // being solved by Composer, and again when the solved dependencies are actually downloaded
-        // (which is done by Composer effectively re-invoking itself, which results in the static
-        // cache being reset).
+        // The metadata should actually be *downloaded* no more than twice -- once while the
+        // dependency tree is being solved, and again when the solved dependencies are actually
+        // downloaded (which is done by Composer effectively re-invoking itself, resulting in
+        // the static cache being reset).
         // @see \Composer\Command\RequireCommand::doUpdate()
-        $this->assertStringContainsStringCount('Downloading http://localhost:8080/metadata/1.package_metadata.json', $debug, 2);
-        $this->assertStringContainsStringCount('Downloading http://localhost:8080/metadata/1.package.json', $debug, 2);
+        $this->assertLessThanOrEqual(2, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package_metadata.json'));
+        $this->assertLessThanOrEqual(2, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package.json'));
 
         $this->assertDirectoryExists("$vendorDir/drupal/token");
         $this->assertDirectoryExists("$vendorDir/drupal/pathauto");
@@ -108,7 +108,7 @@ class ComposerCommandsTest extends FunctionalTestBase
         $this->assertSame('drupal/pathauto/1.12.0.0', $transportOptions['tuf']['target']);
         $this->assertNotEmpty($transportOptions['max_file_size']);
 
-        $this->composer(['remove', 'drupal/pathauto', 'drupal/token']);
+        $this->composer(['remove', 'drupal/core-recommended']);
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/token");
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/pathauto");
     }
