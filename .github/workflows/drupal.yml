@@ -23,7 +23,7 @@ jobs:
         core_version:
           - ^10
           - ^11
-    if: ${{ matrix.core_version == "^10" || ( matrix.core_version == "^11" && matrix.php >= 8.3 ) }}
+    if: ${{ matrix.core_version }} == "^10" || ( ${{ matrix.core_version }} == "^11" && ${{ matrix.php }} >= 8.3 )
 
     steps:
       - name: Checkout self
