@@ -30,7 +30,8 @@
         }
     },
     "extra": {
-        "class": "Tuf\\ComposerIntegration\\Plugin"
+        "class": "Tuf\\ComposerIntegration\\Plugin",
+        "plugin-modifies-downloads": true
     },
     "require-dev": {
         "composer/composer": "^2.1",
