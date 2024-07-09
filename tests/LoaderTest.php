@@ -8,6 +8,7 @@ use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
+use DMS\PHPUnitExtensions\ArraySubset\Constraint\ArraySubset;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 use Tuf\ComposerIntegration\ComposerFileStorage;
@@ -35,8 +36,8 @@ class LoaderTest extends TestCase
         $downloader = $this->createMock(HttpDownloader::class);
         $downloader->expects($this->atLeastOnce())
             ->method('get')
-            ->with($url, ['max_file_size' => 129])
-            ->willReturn(new Response(['url' => $url], 200, [], null));
+            ->with($url, $this->mockOptions(129))
+            ->willReturn(new Response(['url' => $url], 200, [], ''));
         $this->assertInstanceOf(StreamInterface::class, $loader($downloader)->load('root.json', 128)->wait());
 
         // Any TransportException with a 404 error could should be converted
@@ -46,7 +47,7 @@ class LoaderTest extends TestCase
         $downloader = $this->createMock(HttpDownloader::class);
         $downloader->expects($this->atLeastOnce())
             ->method('get')
-            ->with('/metadata/bogus.txt', ['max_file_size' => 11])
+            ->with('/metadata/bogus.txt', $this->mockOptions(11))
             ->willThrowException($exception);
         try {
             $loader($downloader)->load('bogus.txt', 10);
@@ -60,7 +61,7 @@ class LoaderTest extends TestCase
         $downloader = $this->createMock(HttpDownloader::class);
         $downloader->expects($this->atLeastOnce())
             ->method('get')
-            ->with('/metadata/too_big.txt', ['max_file_size' => 11])
+            ->with('/metadata/too_big.txt', $this->mockOptions(11))
             ->willThrowException(new MaxFileSizeExceededException());
         try {
             $loader($downloader)->load('too_big.txt', 10);
@@ -75,7 +76,7 @@ class LoaderTest extends TestCase
         $downloader = $this->createMock(HttpDownloader::class);
         $downloader->expects($this->atLeastOnce())
             ->method('get')
-            ->with('/metadata/wtf.txt', ['max_file_size' => 11])
+            ->with('/metadata/wtf.txt', $this->mockOptions(11))
             ->willThrowException($originalException);
         try {
             $loader($downloader)->load('wtf.txt', 10);
@@ -95,17 +96,9 @@ class LoaderTest extends TestCase
         $method = new \ReflectionMethod($storage, 'write');
         $method->setAccessible(true);
         $method->invoke($storage, 'test', 'Some test data.');
-        $modifiedTime = $storage->getModifiedTime('test')->format('D, d M Y H:i:s');
+        $modifiedTime = $storage->getModifiedTime('test');
 
         $downloader = $this->createMock(HttpDownloader::class);
-        $options = [
-            'max_file_size' => 1025,
-            'http' => [
-                'header' => [
-                    "If-Modified-Since: $modifiedTime GMT",
-                ],
-            ],
-        ];
         $url = '2.test.json';
         $response = $this->createMock(Response::class);
         $response->expects($this->atLeastOnce())
@@ -115,7 +108,7 @@ class LoaderTest extends TestCase
             ->method('getBody');
         $downloader->expects($this->atLeastOnce())
             ->method('get')
-            ->with($url, $options)
+            ->with($url, $this->mockOptions(1025, $modifiedTime))
             ->willReturn($response);
 
         $loader = new Loader($downloader, $storage, $this->createMock(IOInterface::class));
@@ -138,7 +131,7 @@ class LoaderTest extends TestCase
         $downloader = $this->createMock(HttpDownloader::class);
         $downloader->expects($this->once())
             ->method('get')
-            ->with('foo.txt', ['max_file_size' => 1025])
+            ->with('foo.txt', $this->mockOptions(1025))
             ->willReturn($response);
 
         $loader = new Loader($downloader, $this->createMock(ComposerFileStorage::class), $this->createMock(IOInterface::class));
@@ -153,5 +146,20 @@ class LoaderTest extends TestCase
 
         $this->assertSame($stream, $loader->load('foo.txt', 1024)->wait());
         $this->assertSame(0, $stream->tell());
+    }
+
+    private function mockOptions(int $expectedSize, ?\DateTimeInterface $modifiedTime = null): object
+    {
+        $options = ['max_file_size' => $expectedSize];
+
+        // There's no real reason to expose versionHeader() to the world, so
+        // it's okay to use reflection here.
+        $method = new \ReflectionMethod(Loader::class, 'versionHeader');
+        $options['http']['header'][] = $method->invoke(null);
+
+        if ($modifiedTime) {
+            $options['http']['header'][] = "If-Modified-Since: " . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
+        }
+        return new ArraySubset($options);
     }
 }

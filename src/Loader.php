@@ -4,6 +4,7 @@ namespace Tuf\ComposerIntegration;
 
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
+use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\Create;
@@ -51,6 +52,8 @@ class Loader implements LoaderInterface
             // @see \Tuf\ComposerIntegration\ComposerCompatibleUpdater::getLength()
             'max_file_size' => $maxBytes + 1,
         ];
+        // Always send a X-PHP-TUF header with version information.
+        $options['http']['header'][] = self::versionHeader();
 
         // The name of the file in persistent storage will differ from $locator.
         $name = basename($locator, '.json');
@@ -90,5 +93,14 @@ class Loader implements LoaderInterface
         $stream = $this->cache[$url] = Utils::streamFor($content);
         $stream->rewind();
         return Create::promiseFor($stream);
+    }
+
+    private static function versionHeader(): string
+    {
+        return sprintf(
+          'X-PHP-TUF: client=%s; plugin=%s',
+          InstalledVersions::getVersion('php-tuf/php-tuf'),
+          InstalledVersions::getVersion('php-tuf/composer-integration'),
+        );
     }
 }
