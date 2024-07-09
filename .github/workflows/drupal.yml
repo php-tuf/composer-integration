@@ -10,7 +10,7 @@ on:
 
 jobs:
   composer-project:
-    name: ${{ matrix.template }} on PHP ${{ matrix.php }}
+    name: ${{ matrix.template }} ${{ matrix.core }}.x on PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,6 +20,11 @@ jobs:
         template:
           - recommended-project
           - legacy-project
+        core: [10, 11]
+        # Drupal 11's minimum PHP version is 8.3.
+        exclude:
+          - { core: 11, php: 8.1 }
+          - { core: 11, php: 8.2 }
 
     steps:
       - name: Checkout self
@@ -35,7 +40,7 @@ jobs:
 
       - name: Create Drupal project
         run: |
-          composer create-project drupal/${{ matrix.template }} project
+          composer create-project drupal/${{ matrix.template }}:^${{ matrix.core }}@dev project
           cd project
           composer config --no-plugins allow-plugins.php-tuf/composer-integration true
           composer config repositories.local path ../composer-integration
