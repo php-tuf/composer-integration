@@ -36,7 +36,6 @@ class LoaderTest extends TestCase
         return new Loader(
             $storage ?? $this->createMock(ComposerFileStorage::class),
             new NullIO(),
-            '/metadata/',
             new Client([
                 'handler' => HandlerStack::create($this->responses),
             ]),

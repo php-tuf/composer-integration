@@ -27,20 +27,11 @@ class Loader implements LoaderInterface
      */
     private array $cache = [];
 
-    private readonly ClientInterface $client;
-
     public function __construct(
         private readonly ComposerFileStorage $storage,
         private readonly IOInterface $io,
-        string $baseUrl = '',
-        ?ClientInterface $client = null,
-    ) {
-        $options = [];
-        if ($baseUrl) {
-            $options['base_uri'] = $baseUrl;
-        }
-        $this->client = $client ?? new Client($options);
-    }
+        private readonly ClientInterface $client,
+    ) {}
 
     /**
      * {@inheritDoc}
