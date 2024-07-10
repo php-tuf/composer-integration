@@ -32,13 +32,14 @@ class Loader implements LoaderInterface
     public function __construct(
         private readonly ComposerFileStorage $storage,
         private readonly IOInterface $io,
-        string $baseUrl = ''
+        string $baseUrl = '',
+        ?ClientInterface $client = null,
     ) {
         $options = [];
         if ($baseUrl) {
             $options['base_uri'] = $baseUrl;
         }
-        $this->client = new Client($options);
+        $this->client = $client ?? new Client($options);
     }
 
     /**
@@ -108,7 +109,7 @@ class Loader implements LoaderInterface
     private static function versionHeader(): string
     {
         return sprintf(
-          'X-PHP-TUF: client=%s; plugin=%s',
+          'client=%s; plugin=%s',
           InstalledVersions::getVersion('php-tuf/php-tuf'),
           InstalledVersions::getVersion('php-tuf/composer-integration'),
         );
