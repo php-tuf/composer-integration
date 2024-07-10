@@ -55,9 +55,6 @@ class TufValidatedComposerRepository extends ComposerRepository
         if (!empty($repoConfig['tuf'])) {
             // TUF metadata can optionally be loaded from a different place than the Composer package metadata.
             $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
-            if (!str_ends_with($metadataUrl, '/')) {
-                $metadataUrl .= '/';
-            }
 
             $maxBytes = $repoConfig['tuf']['max-bytes'] ?? NULL;
             if (is_int($maxBytes)) {
@@ -66,7 +63,7 @@ class TufValidatedComposerRepository extends ComposerRepository
 
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
             $storage = $this->initializeStorage($url, $config);
-            $loader = new Loader($httpDownloader, $storage, $io, $metadataUrl);
+            $loader = new Loader($storage, $io, $metadataUrl);
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 

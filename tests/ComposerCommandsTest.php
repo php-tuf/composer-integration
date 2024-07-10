@@ -75,8 +75,8 @@ class ComposerCommandsTest extends FunctionalTestBase
 
         // Even though we are searching delegated roles for multiple targets, we should see the TUF metadata
         // loaded from the static cache.
-        $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package_metadata.json from static cache.', $debug);
-        $this->assertStringContainsString('[TUF] Loading http://localhost:8080/metadata/1.package.json from static cache.', $debug);
+        $this->assertStringContainsString("[TUF] Loading '1.package_metadata.json' from static cache.", $debug);
+        $this->assertStringContainsString("[TUF] Loading '1.package.json' from static cache.", $debug);
         // The metadata should actually be *downloaded* no more than twice -- once while the
         // dependency tree is being solved, and again when the solved dependencies are actually
         // downloaded (which is done by Composer effectively re-invoking itself, resulting in
