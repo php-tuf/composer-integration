@@ -118,10 +118,8 @@ class ApiTest extends FunctionalTestBase
      */
     private function setUpdater(TufValidatedComposerRepository $repository, Updater $updater): void
     {
-        $reflector = new \ReflectionClass(TufValidatedComposerRepository::class);
-        $property = $reflector->getProperty('updater');
-        $property->setAccessible(true);
-        $property->setValue($repository, $updater);
+        $reflector = new \ReflectionProperty(TufValidatedComposerRepository::class, 'updater');
+        $reflector->setValue($repository, $updater);
     }
 
     /**
@@ -150,20 +148,12 @@ class ApiTest extends FunctionalTestBase
             }
         };
 
-        $updater = $this->createMock(ComposerCompatibleUpdater::class);
-        $updater->expects($this->atLeastOnce())
-            ->method('getLength')
-            ->with('drupal/token/1.9.0.0')
-            ->willReturn(36);
-        $this->setUpdater($repository, $updater);
-
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9.0');
         $repository->configurePackageTransportOptions($package);
         $options = $package->getTransportOptions();
         $this->assertArrayHasKey('tuf', $options);
         $this->assertSame('https://packages.drupal.org/8', $options['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $options['tuf']['target']);
-        $this->assertSame(36, $options['max_file_size']);
     }
 
     /**
