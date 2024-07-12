@@ -66,7 +66,8 @@ class TufValidatedComposerRepository extends ComposerRepository
 
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
             $storage = $this->initializeStorage($url, $config);
-            $loader = new Loader($httpDownloader, $storage, $io, $metadataUrl);
+            $loader = new Loader($httpDownloader, $storage, $metadataUrl);
+            $loader = new StaticCache($loader, $io);
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 

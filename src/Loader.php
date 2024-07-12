@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration;
 use Composer\Downloader\MaxFileSizeExceededException;
 use Composer\Downloader\TransportException;
 use Composer\InstalledVersions;
-use Composer\IO\IOInterface;
 use Composer\Util\HttpDownloader;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -19,15 +18,9 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
-    /**
-     * @var \Psr\Http\Message\StreamInterface[]
-     */
-    private array $cache = [];
-
     public function __construct(
         private HttpDownloader $downloader,
         private ComposerFileStorage $storage,
-        private IOInterface $io,
         private string $baseUrl = ''
     ) {}
 
@@ -37,15 +30,6 @@ class Loader implements LoaderInterface
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
         $url = $this->baseUrl . $locator;
-        if (array_key_exists($url, $this->cache)) {
-            $this->io->debug("[TUF] Loading $url from static cache.");
-
-            $cachedStream = $this->cache[$url];
-            // The underlying stream should always be seekable.
-            assert($cachedStream->isSeekable());
-            $cachedStream->rewind();
-            return Create::promiseFor($cachedStream);
-        }
 
         $options = [
             // Add 1 to $maxBytes to work around a bug in Composer.
@@ -90,7 +74,7 @@ class Loader implements LoaderInterface
             fwrite($content, $response->getBody());
         }
 
-        $stream = $this->cache[$url] = Utils::streamFor($content);
+        $stream = Utils::streamFor($content);
         $stream->rewind();
         return Create::promiseFor($stream);
     }
