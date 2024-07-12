@@ -96,7 +96,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
             // from the lock file.
             // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
             $options = $context->getTransportOptions();
-            if (isset($options['tuf'])) {
+            if (empty($options['tuf'])) {
                 return null;
             }
             foreach ($this->repositoryManager->getRepositories() as $repository) {

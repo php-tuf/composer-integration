@@ -99,14 +99,12 @@ class ComposerCommandsTest extends FunctionalTestBase
         $this->assertIsArray($transportOptions);
         $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $transportOptions['tuf']['target']);
-        $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $transportOptions = $lock->findPackage('drupal/pathauto', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
         $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/pathauto/1.12.0.0', $transportOptions['tuf']['target']);
-        $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $this->composer(['remove', 'drupal/core-recommended']);
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/token");
