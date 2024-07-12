@@ -48,10 +48,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
      */
     public function preFileDownload(PreFileDownloadEvent $event): void
     {
-        $context = $event->getContext();
+        $type = $event->getType();
+        $repository = $this->getRepositoryFromEvent($event);
 
-        if ($event->getType() === 'metadata' && $context['repository'] instanceof TufValidatedComposerRepository) {
-            $context['repository']->prepareComposerMetadata($event);
+        if ($type === 'metadata') {
+            $repository?->prepareComposerMetadata($event);
+        } elseif ($type === 'package') {
+            $repository?->preparePackage($event->getContext());
         }
     }
 
@@ -68,46 +71,44 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     public function postFileDownload(PostFileDownloadEvent $event): void
     {
         $type = $event->getType();
-        /** @var array|PackageInterface $context */
         $context = $event->getContext();
+        $repository = $this->getRepositoryFromEvent($event);
 
         if ($type === 'metadata') {
-            if ($context['repository'] instanceof TufValidatedComposerRepository) {
-                $context['repository']->validateComposerMetadata($event->getUrl(), $context['response']);
-            }
+            $repository?->validateComposerMetadata($event->getUrl(), $context['response']);
         } elseif ($type === 'package') {
-            // The repository URL is saved in the package's transport options so that
-            // it will persist even when loaded from the lock file.
-            // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
-            $options = $context->getTransportOptions();
-            if (array_key_exists('tuf', $options)) {
-                $repository = $this->getRepositoryByUrl($options['tuf']['repository']);
-                if ($repository) {
-                    $repository->validatePackage($context, $event->getFileName());
-                }
-            }
+            $repository?->validatePackage($context, $event->getFileName());
         }
     }
 
-    /**
-     * Looks up a TUF-validated Composer repository by its URL.
-     *
-     * @param string $url
-     *   The repository URL.
-     * @return TufValidatedComposerRepository|null
-     *   The TUF-validated Composer repository with the given URL, or NULL if none
-     *   is currently registered.
-     */
-    private function getRepositoryByUrl(string $url): ?TufValidatedComposerRepository
+    private function getRepositoryFromEvent(PreFileDownloadEvent|PostFileDownloadEvent $event): ?TufValidatedComposerRepository
     {
-        foreach ($this->repositoryManager->getRepositories() as $repository) {
-            if ($repository instanceof TufValidatedComposerRepository) {
-                $config = $repository->getRepoConfig();
-                if ($config['url'] === $url) {
-                    return $repository;
+        $type = $event->getType();
+        $context = $event->getContext();
+
+        if ($type === 'metadata') {
+            $repository = $context['repository'];
+            return $repository instanceof TufValidatedComposerRepository ? $repository : null;
+        }
+
+        if ($type === 'package') {
+            // The repository URL is saved in the package's transport options so that it will persist even when loaded
+            // from the lock file.
+            // @see \Tuf\ComposerIntegration\TufValidatedComposerRepository::configurePackageTransportOptions()
+            $options = $context->getTransportOptions();
+            if (isset($options['tuf'])) {
+                return null;
+            }
+            foreach ($this->repositoryManager->getRepositories() as $repository) {
+                if ($repository instanceof TufValidatedComposerRepository) {
+                    ['url' => $url] = $repository->getRepoConfig();
+                    if ($url === $options['tuf']['repository']) {
+                        return $repository;
+                    }
                 }
             }
         }
+
         return null;
     }
 
