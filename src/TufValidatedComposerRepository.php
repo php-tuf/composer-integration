@@ -164,9 +164,6 @@ class TufValidatedComposerRepository extends ComposerRepository
         $options['tuf'] = [
             'repository' => $url,
             'target' => $package->getName() . '/' . $package->getVersion(),
-            // Just for paranoia's sake, ensure this file won't get downloaded if TUF doesn't provide a proper length.
-            // @see ::preparePackage()
-            'max_file_size' => 0,
         ];
         $package->setTransportOptions($options);
     }
