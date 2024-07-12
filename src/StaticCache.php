@@ -5,6 +5,7 @@ namespace Tuf\ComposerIntegration;
 use Composer\IO\IOInterface;
 use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
+use Psr\Http\Message\StreamInterface;
 use Tuf\Loader\LoaderInterface;
 
 class StaticCache implements LoaderInterface
@@ -33,6 +34,10 @@ class StaticCache implements LoaderInterface
             $cachedStream->rewind();
             return Create::promiseFor($cachedStream);
         }
-        return $this->cache[$locator] = $this->decorated->load($locator, $maxBytes);
+        return $this->decorated->load($locator, $maxBytes)
+            ->then(function (StreamInterface $stream) use ($locator) {
+                $this->cache[$locator] = $stream;
+                return $stream;
+            });
     }
 }
