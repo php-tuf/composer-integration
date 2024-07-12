@@ -4,10 +4,8 @@ namespace Tuf\ComposerIntegration;
 
 use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
-use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Promise\Create;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\RequestOptions;
@@ -22,11 +20,6 @@ use Tuf\Loader\LoaderInterface;
  */
 class Loader implements LoaderInterface
 {
-    /**
-     * @var \Psr\Http\Message\StreamInterface[]
-     */
-    private array $cache = [];
-
     public function __construct(
         private readonly ComposerFileStorage $storage,
         private readonly IOInterface $io,
@@ -38,16 +31,6 @@ class Loader implements LoaderInterface
      */
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
-        if (array_key_exists($locator, $this->cache)) {
-            $this->io->debug("[TUF] Loading '$locator' from static cache.");
-
-            $cachedStream = $this->cache[$locator];
-            // The underlying stream should always be seekable.
-            assert($cachedStream->isSeekable());
-            $cachedStream->rewind();
-            return Create::promiseFor($cachedStream);
-        }
-
         $options = [];
         // Try to enforce the maximum download size during transport. This will only have an effect
         // if cURL is in use.
@@ -80,12 +63,10 @@ class Loader implements LoaderInterface
             // response, we can just load the file from cache.
             if ($status === 304) {
                 $content = Utils::tryFopen($this->storage->toPath($name), 'r');
-                $stream = Utils::streamFor($content);
+                return Utils::streamFor($content);
             } else {
-                $stream = $response->getBody();
+                return $response->getBody();
             }
-            $this->cache[$locator] = $stream;
-            return $stream;
         };
         $onFailure = function (\Throwable $e) use ($locator): never {
             if ($e instanceof ClientException && $e->getCode() === 404) {

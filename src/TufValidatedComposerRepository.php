@@ -66,6 +66,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
             $client = new Client(['base_uri' => $metadataUrl]);
             $loader = new Loader($storage, $io, $client);
+            $loader = new StaticCache($loader, $io);
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 
