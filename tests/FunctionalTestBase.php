@@ -106,7 +106,7 @@ abstract class FunctionalTestBase extends TestCase
 
     protected function startServer(): void
     {
-        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080'], static::SERVER_ROOT);
+        $this->server = new Process([PHP_BINARY, '-S', 'localhost:8080', 'router.php'], static::SERVER_ROOT);
         $this->server->start();
         $serverStarted = $this->server->waitUntil(function ($outputType, $output): bool {
             return str_contains($output, 'Development Server (http://localhost:8080) started');
