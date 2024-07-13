@@ -24,7 +24,7 @@ class StaticCacheTest extends TestCase
             ->with('foo.txt', 60)
             ->willReturn(Create::promiseFor($mockedStream));
 
-        $loader = new StaticCache($decorated, $this->createMock(IOInterface::class));
+        $loader = new StaticCache($decorated, $this->createMock(IOInterface::class), 'picard');
         $stream = $loader->load('foo.txt', 60)->wait();
 
         // We should be at the beginning of the stream.
