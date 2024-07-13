@@ -30,31 +30,25 @@ class StaticCache implements LoaderInterface
         private readonly LoaderInterface $decorated,
         private readonly IOInterface $io,
         private readonly string $bin,
-    ) {
-        static::$cache += [
-            $bin => [],
-        ];
-    }
+    ) {}
 
     /**
      * {@inheritDoc}
      */
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
-        $cacheBin = &static::$cache[$this->bin];
-
-        if (array_key_exists($locator, $cacheBin)) {
+        $cachedStream = static::$cache[$this->bin][$locator] ?? null;
+        if ($cachedStream) {
             $this->io->debug("[TUF] Loading '$locator' from static cache.");
 
-            $cachedStream = $cacheBin[$locator];
             // The underlying stream should always be seekable.
             assert($cachedStream->isSeekable());
             $cachedStream->rewind();
             return Create::promiseFor($cachedStream);
         }
         return $this->decorated->load($locator, $maxBytes)
-            ->then(function (StreamInterface $stream) use ($locator, &$cacheBin) {
-                return $cacheBin[$locator] = $stream;
+            ->then(function (StreamInterface $stream) use ($locator) {
+                return static::$cache[$this->bin][$locator] = $stream;
             });
     }
 }
