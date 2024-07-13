@@ -11,16 +11,15 @@ use Tuf\Loader\LoaderInterface;
 /**
  * Caches all downloaded TUF metadata streams in memory.
  *
- * The internal $cache array needs to be static because certain Composer commands
- * will completely reset Composer in the middle of the process -- for example, the
- * `require` command does it before actually updating the installed packages -- which
- * would blow away a non-static (instance) cache. Making $cache static means it
- * persists for the lifetime of the PHP process, no matter how many times Composer
- * resets itself.
+ * Certain Composer commands will completely reset Composer in the middle of the
+ * process -- for example, the `require` command does it before actually updating
+ * the installed packages, which will blow away a non-static (instance) cache.
+ * Making $cache static makes it persist for the lifetime of the PHP process, no
+ * matter how many times Composer resets itself.
  *
- * Because this is effectively the one static cache for *every* TUF-protected
- * repository, it is internally divided into bins, keyed by the base URL from which
- * the TUF metadata is be downloaded.
+ * Because this is effectively the a single static cache for *every* TUF-protected
+ * repository, it's internally divided into bins, keyed by the base URL from which
+ * the TUF metadata is downloaded.
  */
 class StaticCache implements LoaderInterface
 {
