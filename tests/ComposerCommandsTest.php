@@ -77,9 +77,11 @@ class ComposerCommandsTest extends FunctionalTestBase
         $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/core-recommended/10.3.0.0' validated.", $debug);
 
         // Even though we are searching delegated roles for multiple targets, we should see the TUF metadata
-        // loaded from the static cache.
+        // loaded from the static cache...
         $this->assertStringContainsString("[TUF] Loading '1.package_metadata.json' from static cache.", $debug);
         $this->assertStringContainsString("[TUF] Loading '1.package.json' from static cache.", $debug);
+        // ...which should preclude any "not modified" responses.
+        $this->assertStringNotContainsString('[304] http://localhost:8080/', $debug);
         // The metadata should actually be *downloaded* no more than twice -- once while the
         // dependency tree is being solved, and again when the solved dependencies are actually
         // downloaded (which is done by Composer effectively re-invoking itself, resulting in

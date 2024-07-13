@@ -10,25 +10,29 @@ use Tuf\Loader\LoaderInterface;
 
 class StaticCache implements LoaderInterface
 {
-    /**
-     * @var \Psr\Http\Message\StreamInterface[]
-     */
-    private array $cache = [];
+    private static array $cache = [];
 
     public function __construct(
         private readonly LoaderInterface $decorated,
         private readonly IOInterface $io,
-    ) {}
+        private readonly string $bin,
+    ) {
+        static::$cache += [
+            $bin => [],
+        ];
+    }
 
     /**
      * {@inheritDoc}
      */
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
-        if (array_key_exists($locator, $this->cache)) {
+        $cacheBin = &static::$cache[$this->bin];
+
+        if (array_key_exists($locator, $cacheBin)) {
             $this->io->debug("[TUF] Loading '$locator' from static cache.");
 
-            $cachedStream = $this->cache[$locator];
+            $cachedStream = $cacheBin[$locator];
             // The underlying stream should always be seekable.
             assert($cachedStream->isSeekable());
             $cachedStream->rewind();
@@ -36,8 +40,7 @@ class StaticCache implements LoaderInterface
         }
         return $this->decorated->load($locator, $maxBytes)
             ->then(function (StreamInterface $stream) use ($locator) {
-                $this->cache[$locator] = $stream;
-                return $stream;
+                return static::$cache[$this->bin][$locator] = $stream;
             });
     }
 }
