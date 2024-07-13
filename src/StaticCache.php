@@ -17,7 +17,7 @@ use Tuf\Loader\LoaderInterface;
  * Making $cache static makes it persist for the lifetime of the PHP process, no
  * matter how many times Composer resets itself.
  *
- * Because this is effectively the a single static cache for *every* TUF-protected
+ * Because this is effectively the single static cache for *every* TUF-protected
  * repository, it's internally divided into bins, keyed by the base URL from which
  * the TUF metadata is downloaded.
  */
