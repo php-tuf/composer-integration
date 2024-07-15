@@ -66,7 +66,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
             $client = new Client(['base_uri' => $metadataUrl]);
             $loader = new Loader($storage, $io, $client);
-            $loader = new StaticCache($loader, $io);
+            $loader = new StaticCache($loader, $io, $metadataUrl);
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 
@@ -156,17 +156,14 @@ class TufValidatedComposerRepository extends ComposerRepository
         parent::configurePackageTransportOptions($package);
 
         $options = $package->getTransportOptions();
-        $config = $this->getRepoConfig();
-        // Store the information identifying this package to TUF in a format
-        // that can be safely saved to and loaded from the lock file.
-        // @see \Tuf\ComposerIntegration\Plugin::postFileDownload()
+        ['url' => $url] = $this->getRepoConfig();
+
+        // Store the information identifying this package to TUF in a form that can be stored in the lock file.
+        // @see \Tuf\ComposerIntegration\Plugin::getRepositoryFromEvent()
         $options['tuf'] = [
-            'repository' => $config['url'],
+            'repository' => $url,
             'target' => $package->getName() . '/' . $package->getVersion(),
         ];
-        if ($this->isTufEnabled($package)) {
-            $options['max_file_size'] = $this->updater->getLength($options['tuf']['target']);
-        }
         $package->setTransportOptions($options);
     }
 
@@ -256,6 +253,18 @@ class TufValidatedComposerRepository extends ComposerRepository
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
 
             $this->io->debug("[TUF] Target '$target' validated.");
+        }
+    }
+
+    public function preparePackage(PackageInterface $package): void
+    {
+        if ($this->isTufEnabled($package)) {
+            $options = $package->getTransportOptions();
+            $target = $options['tuf']['target'];
+            // @see ::configurePackageTransportOptions()
+            $options['max_file_size'] = $this->updater->getLength($target);
+            $this->io->debug("[TUF] Target '$target' limited to " . $options['max_file_size'] . ' bytes.');
+            $package->setTransportOptions($options);
         }
     }
 

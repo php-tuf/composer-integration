@@ -67,16 +67,21 @@ class ComposerCommandsTest extends FunctionalTestBase
         // size, and there should not be a message saying that it was validated.
         $this->assertStringContainsString("[TUF] Target 'drupal/token~dev.json' limited to " . TufValidatedComposerRepository::MAX_404_BYTES, $debug);
         $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/token~dev.json' validated.", $debug);
-        // The plugin won't report the maximum download size of package targets; instead, that
-        // information will be stored in the transport options saved to the lock file.
+        // The plugin should report the maximum download size of package targets.
+        $this->assertStringContainsString("[TUF] Target 'drupal/token/1.9.0.0' limited to 114056 bytes.", $debug);
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto/1.12.0.0' limited to 123805 bytes.", $debug);
         $this->assertStringContainsString("[TUF] Target 'drupal/token/1.9.0.0' validated.", $debug);
-        // Metapackages should not be validated, because they don't actually install any files.
+        $this->assertStringContainsString("[TUF] Target 'drupal/pathauto/1.12.0.0' validated.", $debug);
+        // Metapackages should not be size-limited or validated, because they don't actually install any files.
+        $this->assertStringNotContainsString("[TUF] Target 'drupal/core/recommended/10.3.0.0' limited to ", $debug);
         $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/core-recommended/10.3.0.0' validated.", $debug);
 
         // Even though we are searching delegated roles for multiple targets, we should see the TUF metadata
-        // loaded from the static cache.
+        // loaded from the static cache...
         $this->assertStringContainsString("[TUF] Loading '1.package_metadata.json' from static cache.", $debug);
         $this->assertStringContainsString("[TUF] Loading '1.package.json' from static cache.", $debug);
+        // ...which should preclude any "not modified" responses.
+        $this->assertStringNotContainsString('[304] http://localhost:8080/', $debug);
         // The metadata should actually be *downloaded* no more than twice -- once while the
         // dependency tree is being solved, and again when the solved dependencies are actually
         // downloaded (which is done by Composer effectively re-invoking itself, resulting in
@@ -99,14 +104,12 @@ class ComposerCommandsTest extends FunctionalTestBase
         $this->assertIsArray($transportOptions);
         $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/token/1.9.0.0', $transportOptions['tuf']['target']);
-        $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $transportOptions = $lock->findPackage('drupal/pathauto', '*')
             ?->getTransportOptions();
         $this->assertIsArray($transportOptions);
         $this->assertSame('http://localhost:8080', $transportOptions['tuf']['repository']);
         $this->assertSame('drupal/pathauto/1.12.0.0', $transportOptions['tuf']['target']);
-        $this->assertNotEmpty($transportOptions['max_file_size']);
 
         $this->composer(['remove', 'drupal/core-recommended']);
         $this->assertDirectoryDoesNotExist("$vendorDir/drupal/token");
