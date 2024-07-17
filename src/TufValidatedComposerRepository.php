@@ -71,7 +71,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 
-            $io->debug("[TUF] Packages from $url are verified by TUF.");
+            $io->info("[TUF] Packages from $url are verified by TUF. This may impact performance.");
             $io->debug("[TUF] Metadata source: $metadataUrl");
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
