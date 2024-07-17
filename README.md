@@ -50,3 +50,17 @@ composer tuf:protect https://packages.drupal.org/8
 # Install a package with safety guaranteed by TUF!
 composer require drupal/token
 ```
+
+## Performance
+There's no way around it: this plugin affects Composer's performance. This is because, for every file Composer examines
+(including package metadata), TUF needs to download other files, to confirm that the file Composer is looking at hasn't
+been tampered with.
+
+The performance hit generally isn't extreme, but it may be quite noticeable, depending on how large your project is and
+what you're asking Composer to do. Performance can also be affected by the way TUF has been set up on the server, which
+may be different for each repository.
+
+To mitigate this, the plugin will try to keep network activity to a minimum; whatever network activity it has to do, it
+tries to do in parallel. This is in addition to fairly aggressive caching, while maintaining the ability for TUF to
+keep itself up-to-date. That said, **you should generally expect Composer to be approximately 1.5 to 3 times slower when
+TUF is enabled.**
