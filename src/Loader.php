@@ -31,13 +31,9 @@ class Loader implements LoaderInterface
      */
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
-        $options = [
-            // @see https://docs.guzzlephp.org/en/stable/request-options.html#stream
-            RequestOptions::STREAM => true,
-        ];
+        $options = [];
         // Try to enforce the maximum download size during transport. This will only have an effect
         // if cURL is in use.
-        // @see https://docs.guzzlephp.org/en/stable/request-options.html#progress
         $options[RequestOptions::PROGRESS] = function (int $expectedBytes, int $bytesSoFar) use ($locator, $maxBytes): void
         {
             // Add 1 to $maxBytes to work around a bug in Composer.
@@ -47,7 +43,6 @@ class Loader implements LoaderInterface
             }
         };
         // Always send a X-PHP-TUF header with version information.
-        // @see https://docs.guzzlephp.org/en/stable/request-options.html#headers
         $options[RequestOptions::HEADERS]['X-PHP-TUF'] = self::versionHeader();
 
         // The name of the file in persistent storage will differ from $locator.
@@ -57,7 +52,6 @@ class Loader implements LoaderInterface
         $modifiedTime = $this->storage->getModifiedTime($name);
         if ($modifiedTime) {
             // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since.
-            // @see https://docs.guzzlephp.org/en/stable/request-options.html#headers
             $options[RequestOptions::HEADERS]['If-Modified-Since'] = $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
         }
 
