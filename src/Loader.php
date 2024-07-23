@@ -2,13 +2,15 @@
 
 namespace Tuf\ComposerIntegration;
 
-use Composer\Downloader\MaxFileSizeExceededException;
-use Composer\Downloader\TransportException;
 use Composer\InstalledVersions;
-use Composer\Util\HttpDownloader;
-use GuzzleHttp\Promise\Create;
+use Composer\IO\IOInterface;
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Promise\PromiseInterface;
 use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\NotFoundException;
 use Tuf\Loader\LoaderInterface;
@@ -19,9 +21,9 @@ use Tuf\Loader\LoaderInterface;
 class Loader implements LoaderInterface
 {
     public function __construct(
-        private HttpDownloader $downloader,
-        private ComposerFileStorage $storage,
-        private string $baseUrl = ''
+        private readonly ComposerFileStorage $storage,
+        private readonly IOInterface $io,
+        private readonly ClientInterface $client,
     ) {}
 
     /**
@@ -29,15 +31,19 @@ class Loader implements LoaderInterface
      */
     public function load(string $locator, int $maxBytes): PromiseInterface
     {
-        $url = $this->baseUrl . $locator;
-
-        $options = [
+        $options = [];
+        // Try to enforce the maximum download size during transport. This will only have an effect
+        // if cURL is in use.
+        $options[RequestOptions::PROGRESS] = function (int $expectedBytes, int $bytesSoFar) use ($locator, $maxBytes): void
+        {
             // Add 1 to $maxBytes to work around a bug in Composer.
             // @see \Tuf\ComposerIntegration\ComposerCompatibleUpdater::getLength()
-            'max_file_size' => $maxBytes + 1,
-        ];
+            if ($bytesSoFar > $maxBytes + 1) {
+                throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
+            }
+        };
         // Always send a X-PHP-TUF header with version information.
-        $options['http']['header'][] = self::versionHeader();
+        $options[RequestOptions::HEADERS]['X-PHP-TUF'] = self::versionHeader();
 
         // The name of the file in persistent storage will differ from $locator.
         $name = basename($locator, '.json');
@@ -46,43 +52,36 @@ class Loader implements LoaderInterface
         $modifiedTime = $this->storage->getModifiedTime($name);
         if ($modifiedTime) {
             // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since.
-            $options['http']['header'][] = 'If-Modified-Since: ' . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
+            $options[RequestOptions::HEADERS]['If-Modified-Since'] = $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
         }
 
-        try {
-            $response = $this->downloader->get($url, $options);
-        } catch (TransportException $e) {
-            if ($e->getStatusCode() === 404) {
-                throw new NotFoundException($locator);
-            } elseif ($e instanceof MaxFileSizeExceededException) {
-                throw new DownloadSizeException("$locator exceeded $maxBytes bytes");
+        $onSuccess = function (ResponseInterface $response) use ($name, $locator): StreamInterface {
+            $status = $response->getStatusCode();
+            $this->io->debug("[TUF] $status: '$locator'");
+
+            // If we sent an If-Modified-Since header and received a 304 (Not Modified)
+            // response, we can just load the file from cache.
+            if ($status === 304) {
+                $content = Utils::tryFopen($this->storage->toPath($name), 'r');
+                return Utils::streamFor($content);
             } else {
-                throw new \RuntimeException($e->getMessage(), $e->getCode(), $e);
+                return $response->getBody();
             }
-        }
+        };
+        $onFailure = function (\Throwable $e) use ($locator): never {
+            if ($e instanceof ClientException && $e->getCode() === 404) {
+                throw new NotFoundException($locator);
+            }
+            throw $e;
+        };
 
-        // If we sent an If-Modified-Since header and received a 304 (Not Modified)
-        // response, we can just load the file from cache.
-        if ($response->getStatusCode() === 304) {
-            $content = Utils::tryFopen($this->storage->toPath($name), 'r');
-        } else {
-            // To prevent the static cache from running out of memory, write the response
-            // contents to a temporary stream (which will turn into a temporary file once
-            // once we've written 1024 bytes to it), which will be automatically cleaned
-            // up when it is garbage collected.
-            $content = Utils::tryFopen('php://temp/maxmemory:1024', 'r+');
-            fwrite($content, $response->getBody());
-        }
-
-        $stream = Utils::streamFor($content);
-        $stream->rewind();
-        return Create::promiseFor($stream);
+        return $this->client->getAsync($locator, $options)->then($onSuccess, $onFailure);
     }
 
     private static function versionHeader(): string
     {
         return sprintf(
-          'X-PHP-TUF: client=%s; plugin=%s',
+          'client=%s; plugin=%s',
           InstalledVersions::getVersion('php-tuf/php-tuf'),
           InstalledVersions::getVersion('php-tuf/composer-integration'),
         );

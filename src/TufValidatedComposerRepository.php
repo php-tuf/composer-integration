@@ -10,6 +10,7 @@ use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository;
 use Composer\Util\Http\Response;
 use Composer\Util\HttpDownloader;
+use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Utils;
 use Tuf\Client\Repository;
 use Tuf\Exception\NotFoundException;
@@ -53,12 +54,6 @@ class TufValidatedComposerRepository extends ComposerRepository
         $url = rtrim($repoConfig['url'], '/');
 
         if (!empty($repoConfig['tuf'])) {
-            // TUF metadata can optionally be loaded from a different place than the Composer package metadata.
-            $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
-            if (!str_ends_with($metadataUrl, '/')) {
-                $metadataUrl .= '/';
-            }
-
             $maxBytes = $repoConfig['tuf']['max-bytes'] ?? NULL;
             if (is_int($maxBytes)) {
                 Repository::$maxBytes = $maxBytes;
@@ -66,7 +61,11 @@ class TufValidatedComposerRepository extends ComposerRepository
 
             // @todo: Write a custom implementation of FileStorage that stores repo keys to user's global composer cache?
             $storage = $this->initializeStorage($url, $config);
-            $loader = new Loader($httpDownloader, $storage, $metadataUrl);
+
+            // TUF metadata can optionally be loaded from a different place than the Composer package metadata.
+            $metadataUrl = $repoConfig['tuf']['metadata-url'] ?? "$url/metadata/";
+            $client = new Client(['base_uri' => $metadataUrl]);
+            $loader = new Loader($storage, $io, $client);
             $loader = new StaticCache($loader, $io, $metadataUrl);
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);

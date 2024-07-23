@@ -3,16 +3,17 @@
 namespace Tuf\ComposerIntegration\Tests;
 
 use Composer\Config;
-use Composer\Downloader\MaxFileSizeExceededException;
-use Composer\Downloader\TransportException;
-use Composer\Util\Http\Response;
-use Composer\Util\HttpDownloader;
+use Composer\IO\NullIO;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\RequestOptions;
 use DMS\PHPUnitExtensions\ArraySubset\Constraint\ArraySubset;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\StreamInterface;
 use Tuf\ComposerIntegration\ComposerFileStorage;
 use Tuf\ComposerIntegration\Loader;
-use Tuf\Exception\DownloadSizeException;
 use Tuf\Exception\NotFoundException;
 
 /**
@@ -20,114 +21,77 @@ use Tuf\Exception\NotFoundException;
  */
 class LoaderTest extends TestCase
 {
-    public function testLoader(): void
+    private readonly MockHandler $responses;
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function setUp(): void
     {
-        $loader = function (HttpDownloader $downloader): Loader {
-            return new Loader(
-              $downloader,
-              $this->createMock(ComposerFileStorage::class),
-              '/metadata/'
-            );
-        };
+        parent::setUp();
+        $this->responses = new MockHandler();
+    }
 
-        $url = '/metadata/root.json';
-        $downloader = $this->createMock(HttpDownloader::class);
-        $downloader->expects($this->atLeastOnce())
-            ->method('get')
-            ->with($url, $this->mockOptions(129))
-            ->willReturn(new Response(['url' => $url], 200, [], ''));
-        $this->assertInstanceOf(StreamInterface::class, $loader($downloader)->load('root.json', 128)->wait());
+    private function getLoader(?ComposerFileStorage $storage = null): Loader
+    {
+        return new Loader(
+            $storage ?? $this->createMock(ComposerFileStorage::class),
+            new NullIO(),
+            new Client([
+                'handler' => HandlerStack::create($this->responses),
+            ]),
+        );
+    }
 
-        // Any TransportException with a 404 error could should be converted
-        // into a NotFoundException.
-        $exception = new TransportException();
-        $exception->setStatusCode(404);
-        $downloader = $this->createMock(HttpDownloader::class);
-        $downloader->expects($this->atLeastOnce())
-            ->method('get')
-            ->with('/metadata/bogus.txt', $this->mockOptions(11))
-            ->willThrowException($exception);
+    public function testBasicSuccessAndFailure(): void
+    {
+        $loader = $this->getLoader();
+
+        $this->responses->append(new Response());
+        $this->assertInstanceOf(StreamInterface::class, $loader->load('root.json', 128)->wait());
+        $this->assertRequestOptions();
+
+        // Any 404 response should raise a NotFoundException.
+        $this->responses->append(new Response(404));
         try {
-            $loader($downloader)->load('bogus.txt', 10);
+            $loader->load('bogus.txt', 10)->wait();
             $this->fail('Expected a NotFoundException, but none was thrown.');
         } catch (NotFoundException $e) {
             $this->assertSame('Item not found: bogus.txt', $e->getMessage());
-        }
-
-        // A MaxFileSizeExceededException should be converted into a
-        // DownloadSizeException.
-        $downloader = $this->createMock(HttpDownloader::class);
-        $downloader->expects($this->atLeastOnce())
-            ->method('get')
-            ->with('/metadata/too_big.txt', $this->mockOptions(11))
-            ->willThrowException(new MaxFileSizeExceededException());
-        try {
-            $loader($downloader)->load('too_big.txt', 10);
-            $this->fail('Expected a DownloadSizeException, but none was thrown.');
-        } catch (DownloadSizeException $e) {
-            $this->assertSame('too_big.txt exceeded 10 bytes', $e->getMessage());
-        }
-
-        // Any other TransportException should be wrapped in a
-        // \RuntimeException.
-        $originalException = new TransportException('Whiskey Tango Foxtrot', -32);
-        $downloader = $this->createMock(HttpDownloader::class);
-        $downloader->expects($this->atLeastOnce())
-            ->method('get')
-            ->with('/metadata/wtf.txt', $this->mockOptions(11))
-            ->willThrowException($originalException);
-        try {
-            $loader($downloader)->load('wtf.txt', 10);
-            $this->fail('Expected a RuntimeException, but none was thrown.');
-        } catch (\RuntimeException $e) {
-            $this->assertSame($originalException->getMessage(), $e->getMessage());
-            $this->assertSame($originalException->getCode(), $e->getCode());
-            $this->assertSame($originalException, $e->getPrevious());
+            $this->assertRequestOptions();
         }
     }
 
     public function testNotModifiedResponse(): void
     {
-        $config = new Config();
-        $storage = ComposerFileStorage::create('https://example.net/packages', $config);
+        $storage = ComposerFileStorage::create('https://example.net/packages', new Config());
 
         $method = new \ReflectionMethod($storage, 'write');
-        $method->setAccessible(true);
         $method->invoke($storage, 'test', 'Some test data.');
-        $modifiedTime = $storage->getModifiedTime('test');
 
-        $downloader = $this->createMock(HttpDownloader::class);
-        $url = '2.test.json';
-        $response = $this->createMock(Response::class);
-        $response->expects($this->atLeastOnce())
-            ->method('getStatusCode')
-            ->willReturn(304);
-        $response->expects($this->never())
-            ->method('getBody');
-        $downloader->expects($this->atLeastOnce())
-            ->method('get')
-            ->with($url, $this->mockOptions(1025, $modifiedTime))
-            ->willReturn($response);
+        $this->responses->append(new Response(304));
 
-        $loader = new Loader($downloader, $storage);
         // Since the response has no actual body data, the fact that we get the contents
         // of the file we wrote here is proof that it was ultimately read from persistent
         // storage by the loader.
-        $this->assertSame('Some test data.', $loader->load('2.test.json', 1024)->wait()->getContents());
+        $this->assertSame('Some test data.', $this->getLoader($storage)->load('2.test.json', 1024)->wait()->getContents());
+        $this->assertRequestOptions($storage->getModifiedTime('test'));
     }
 
-    private function mockOptions(int $expectedSize, ?\DateTimeInterface $modifiedTime = null): object
+    private function assertRequestOptions(?\DateTimeInterface $modifiedTime = null): void
     {
-        $options = ['max_file_size' => $expectedSize];
+        $options = $this->responses->getLastOptions();
+        $this->assertIsCallable($options[RequestOptions::PROGRESS]);
+
+        $request = $this->responses->getLastRequest();
 
         // There's no real reason to expose versionHeader() to the world, so
         // it's okay to use reflection here.
         $method = new \ReflectionMethod(Loader::class, 'versionHeader');
-        $options['http']['header'][] = $method->invoke(null);
+        $this->assertSame($request?->getHeaderLine('X-PHP-TUF'), $method->invoke(null));
 
         if ($modifiedTime) {
-            $options['http']['header'][] = "If-Modified-Since: " . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
+            $this->assertSame($request?->getHeaderLine('If-Modified-Since'), $modifiedTime->format('D, d M Y H:i:s') . ' GMT');
         }
-        return new ArraySubset($options);
     }
 }
