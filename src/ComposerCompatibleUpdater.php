@@ -28,10 +28,17 @@ class ComposerCompatibleUpdater extends Updater
      */
     public function verify(string $target, StreamInterface $data): void
     {
+        static $cache = [];
+
+        if (in_array($target, $cache, true)) {
+            return;
+        }
         // This method is overridden in order to make it public, so that the
         // plugin can validate the length and hashes of a downloaded TUF target
         // after Composer has used its own mechanisms to retrieve it.
         parent::verify($target, $data);
+
+        $cache[] = $target;
     }
 
     /**
@@ -48,6 +55,11 @@ class ComposerCompatibleUpdater extends Updater
      */
     public function getLength(string $target): int
     {
+        static $cache = [];
+        if (array_key_exists($target, $cache)) {
+            return $cache[$target];
+        }
+
         $this->refresh();
 
         $metadata = $this->getMetadataForTarget($target);
@@ -59,7 +71,7 @@ class ComposerCompatibleUpdater extends Updater
             // is to prevent infinite data attacks, but adding 1 byte to the
             // expected size won't undermine that.
             // @see https://theupdateframework.github.io/specification/v1.0.18/#file-formats-targets
-            return $metadata->getLength($target) + 1;
+            return $cache[$target] = $metadata->getLength($target) + 1;
         } else {
             throw new NotFoundException($target, 'Target');
         }
