@@ -71,7 +71,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $loader = new SizeCheckingLoader($loader);
             $this->updater = new ComposerCompatibleUpdater($loader, $storage);
 
-            $io->info("[TUF] Packages from $url are verified by TUF. This may impact performance.");
+            $io->write("<info>[TUF] Packages from $url are verified by TUF.</info>");
             $io->debug("[TUF] Metadata source: $metadataUrl");
         } else {
             // @todo Usability assessment. Should we output this for other repo types, or not at all?
@@ -253,7 +253,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $target = $this->getTargetFromUrl($url);
             $this->updater->verify($target, Utils::streamFor($response->getBody()));
 
-            $this->io->debug("[TUF] Target '$target' validated.");
+            $this->io->write("<info>[TUF] Target '$target' validated.</info>");
         }
     }
 
@@ -284,7 +284,7 @@ class TufValidatedComposerRepository extends ComposerRepository
             $resource = Utils::tryFopen($filename, 'r');
             $this->updater->verify($options['tuf']['target'], Utils::streamFor($resource));
 
-            $this->io->debug("[TUF] Target '" . $options['tuf']['target'] . "' validated.");
+            $this->io->write("<info>[TUF] Target '" . $options['tuf']['target'] . "' validated.</info>");
         }
     }
 }
