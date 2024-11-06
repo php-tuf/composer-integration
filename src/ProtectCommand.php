@@ -39,7 +39,7 @@ class ProtectCommand extends BaseCommand
 
         $key = $input->getArgument('repository');
         foreach ($repositories as $index => $repository) {
-            if ($index === $key || $repository['url'] === $key) {
+            if ($index === $key || (isset($repository['url']) && $repository['url'] === $key)) {
                 if ($repository['type'] !== 'composer') {
                     throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
                 }
