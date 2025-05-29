@@ -47,7 +47,7 @@ class TufValidatedComposerRepository extends ComposerRepository
     /**
      * {@inheritDoc}
      */
-    public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, EventDispatcher $eventDispatcher = null)
+    public function __construct(array $repoConfig, IOInterface $io, Config $config, HttpDownloader $httpDownloader, ?EventDispatcher $eventDispatcher = null)
     {
         $this->io = $io;
         $url = rtrim($repoConfig['url'], '/');
