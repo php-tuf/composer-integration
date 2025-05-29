@@ -1,6 +1,6 @@
 {
     "name": "php-tuf/composer-integration",
-    "description": "Proof of concept of securing Composer downloads with PHP-TUF.",
+    "description": "Secures Composer downloads with PHP-TUF.",
     "type": "composer-plugin",
     "license": "MIT",
     "authors": [
