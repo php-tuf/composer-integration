@@ -1,22 +1,22 @@
 {
     "name": "php-tuf/composer-integration",
-    "description": "Proof of concept of securing Composer downloads with PHP-TUF.",
+    "description": "Secures Composer downloads with PHP-TUF.",
     "type": "composer-plugin",
     "license": "MIT",
     "authors": [
         {
-            "name": "Mike Baynton",
-            "email": "mike@mbaynton.com"
-        },
-        {
             "name": "Adam Globus-Hoenich",
             "email": "adam@phenaproxima.net"
+        },
+        {
+            "name": "Ted Bowman",
+            "email": "tedbow@gmail.com"
         }
     ],
     "minimum-stability": "stable",
     "require": {
         "composer-plugin-api": "^2.6",
-        "php-tuf/php-tuf": "0.1.6",
+        "php-tuf/php-tuf": "^0.1.7",
         "guzzlehttp/psr7": "^2.4"
     },
     "autoload": {
