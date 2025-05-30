@@ -76,19 +76,12 @@ class ComposerCommandsTest extends FunctionalTestBase
         $this->assertStringNotContainsString("[TUF] Target 'drupal/core/recommended/10.3.0.0' limited to ", $debug);
         $this->assertStringNotContainsStringIgnoringCase("[TUF] Target 'drupal/core-recommended/10.3.0.0' validated.", $debug);
 
+        // The metadata should actually be *downloaded* only once.
+        $this->assertSame(1, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package_metadata.json'));
+        $this->assertSame(1, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package.json'));
         // Even though we are searching delegated roles for multiple targets, we should see the TUF metadata
-        // loaded from the static cache...
-        $this->assertStringContainsString("[TUF] Loading '1.package_metadata.json' from static cache.", $debug);
-        $this->assertStringContainsString("[TUF] Loading '1.package.json' from static cache.", $debug);
-        // ...which should preclude any "not modified" responses.
+        // loaded from the static cache. Therefore, we should not see any "not modified" responses.
         $this->assertStringNotContainsString('[304] http://localhost:8080/', $debug);
-        // The metadata should actually be *downloaded* no more than twice -- once while the
-        // dependency tree is being solved, and again when the solved dependencies are actually
-        // downloaded (which is done by Composer effectively re-invoking itself, resulting in
-        // the static cache being reset).
-        // @see \Composer\Command\RequireCommand::doUpdate()
-        $this->assertLessThanOrEqual(2, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package_metadata.json'));
-        $this->assertLessThanOrEqual(2, substr_count($debug, 'Downloading http://localhost:8080/metadata/1.package.json'));
 
         $this->assertDirectoryExists("$vendorDir/drupal/token");
         $this->assertDirectoryExists("$vendorDir/drupal/pathauto");
