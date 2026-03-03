@@ -37,18 +37,29 @@ class ProtectCommand extends BaseCommand
         $data = $file->read();
         $repositories = $data['repositories'] ?? [];
 
-        $key = $input->getArgument('repository');
+        $repoToProtect = $input->getArgument('repository');
         foreach ($repositories as $index => $repository) {
-            if ($index === $key || $repository['url'] === $key) {
+            $name = $repository['name'] ?? NULL;
+            $url = $repository['url'] ?? NULL;
+
+            // @TODO: Eventually remove this backward compatibility shim, which deals
+            // with composer.json files from Composer versions less than 2.9.
+            if (is_null($name) && $index === $repoToProtect) {
+                // @TODO: Output a warning that this composer schema format is
+                // deprecated, and prompt users to update their composer.json files.
+                $name = $index;
+            }
+
+            if ($name === $repoToProtect || $url === $repoToProtect) {
                 if ($repository['type'] !== 'composer') {
                     throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
                 }
                 $data['repositories'][$index]['tuf'] = TRUE;
                 $file->write($data);
-                $output->writeln($repository['url'] . ' is now protected by TUF.');
+                $output->writeln("'" . $repoToProtect . "' is now protected by TUF.");
                 return 0;
             }
         }
-        throw new \LogicException("The '$key' repository is not defined in " . $file->getPath());
+        throw new \LogicException("The '$repoToProtect' repository is not defined in " . $file->getPath());
     }
 }
