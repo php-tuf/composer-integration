@@ -92,7 +92,6 @@ class LoaderTest extends TestCase
         $storage = ComposerFileStorage::create('https://example.net/packages', $config);
 
         $method = new \ReflectionMethod($storage, 'write');
-        $method->setAccessible(true);
         $method->invoke($storage, 'test', 'Some test data.');
         $modifiedTime = $storage->getModifiedTime('test');
 
