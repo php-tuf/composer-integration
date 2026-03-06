@@ -150,7 +150,9 @@ abstract class FunctionalTestBase extends TestCase
 
         $process = new Process($arguments, $this->workingDir);
         $process->run();
-        static::assertSame($expected_exit_code, $process->getExitCode());
+        $assertionError = $process->getErrorOutput() . "\n" . "Composer exited with {$process->getExitCode()}, expected $expected_exit_code.";
+
+        static::assertSame($expected_exit_code, $process->getExitCode(), $assertionError);
         // There should not be any deprecation warnings.
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
