@@ -26,6 +26,8 @@ abstract class FunctionalTestBase extends TestCase
 
     protected const SERVER_ROOT = __DIR__ . '/server_root';
 
+    protected Fixture $fixture;
+
     /**
      * {@inheritDoc}
      */
@@ -42,28 +44,28 @@ abstract class FunctionalTestBase extends TestCase
         reset($loaders)->addPsr4('Tuf\\Tests\\', key($loaders) . '/php-tuf/php-tuf/tests');
 
         // Generate the fixture.
-        $fixture = new Fixture($this->workingDir);
-        $fixture->root->consistentSnapshot = true;
-        $fixture->delegate('targets', 'package_metadata', [
+        $this->fixture = new Fixture($this->workingDir);
+        $this->fixture->root->consistentSnapshot = true;
+        $this->fixture->delegate('targets', 'package_metadata', [
           'paths' => ['drupal/*.json'],
         ]);
-        $fixture->delegate('targets', 'package', [
+        $this->fixture->delegate('targets', 'package', [
           'paths' => ['drupal/*/*'],
         ]);
         $dir = static::SERVER_ROOT;
-        $fixture->addTarget("$dir/packages.json");
-        $fixture->targets['package_metadata']->add("$dir/drupal/token.json", 'drupal/token.json');
-        $fixture->targets['package_metadata']->add("$dir/drupal/pathauto.json", 'drupal/pathauto.json');
+        $this->fixture->addTarget("$dir/packages.json");
+        $this->fixture->targets['package_metadata']->add("$dir/drupal/token.json", 'drupal/token.json');
+        $this->fixture->targets['package_metadata']->add("$dir/drupal/pathauto.json", 'drupal/pathauto.json');
         // Add a metapackage so we can test that we don't try to verify packages
         // that don't install any files of their own.
-        $fixture->targets['package_metadata']->add("$dir/drupal/core-recommended.json", 'drupal/core-recommended.json');
-        $fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
-        $fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
-        $fixture->publish();
+        $this->fixture->targets['package_metadata']->add("$dir/drupal/core-recommended.json", 'drupal/core-recommended.json');
+        $this->fixture->targets['package']->add("$dir/token-1.9.zip", 'drupal/token/1.9.0.0');
+        $this->fixture->targets['package']->add("$dir/pathauto-1.12.zip", 'drupal/pathauto/1.12.0.0');
+        $this->fixture->publish();
         // Copy the root metadata into the working directory.
-        copy($fixture->serverDir . '/root.json', $this->workingDir . '/tuf/localhost.json');
+        copy($this->fixture->serverDir . '/root.json', $this->workingDir . '/tuf/localhost.json');
         // Symlink all the other metadata into the root directory of the web server.
-        $this->fileSystem->relativeSymlink($fixture->serverDir, "$dir/metadata");
+        $this->fileSystem->relativeSymlink($this->fixture->serverDir, "$dir/metadata");
 
         // Generate `composer.json` with the appropriate configuration.
         $this->composer(['init', '--no-interaction', '--stability=dev']);
