@@ -88,7 +88,7 @@ class ApiTest extends FunctionalTestBase
      * @return TufValidatedComposerRepository
      *   The created repository object.
      */
-    private function mockRepository(Updater $updater = NULL, array $config = []): TufValidatedComposerRepository
+    private function mockRepository(?Updater $updater = NULL, array $config = []): TufValidatedComposerRepository
     {
         $manager = $this->composer->getRepositoryManager();
 
