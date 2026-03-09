@@ -14,7 +14,7 @@ class ComposerFileStorage extends FileStorage
     /**
      * {@inheritDoc}
      */
-    public function __construct(string $basePath)
+    final public function __construct(string $basePath)
     {
         (new Filesystem())->ensureDirectoryExists($basePath);
         parent::__construct($basePath);

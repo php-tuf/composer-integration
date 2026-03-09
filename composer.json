@@ -26,7 +26,8 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tuf\\ComposerIntegration\\Tests\\": "tests/"
+            "Tuf\\ComposerIntegration\\Tests\\": "tests/",
+            "Tuf\\Tests\\": "vendor/php-tuf/php-tuf/tests/"
         }
     },
     "extra": {
@@ -37,9 +38,11 @@
         "composer/composer": "^2.9",
         "phpunit/phpunit": "^9.5",
         "symfony/process": "^6",
-        "dms/phpunit-arraysubset-asserts": "^0.5.0"
+        "dms/phpunit-arraysubset-asserts": "^0.5.0",
+        "phpstan/phpstan": "^2.1"
     },
     "scripts": {
+        "phpstan": "phpstan",
         "test": [
             "phpunit ./tests --debug"
         ]
