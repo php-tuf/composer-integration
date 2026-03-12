@@ -44,7 +44,10 @@ class Loader implements LoaderInterface
         $name = ltrim($name, '.0123456789');
 
         $modifiedTime = $this->storage->getModifiedTime($name);
-        if ($modifiedTime) {
+        // § 5.3.1
+        // According to the TUF spec, the client MUST download intermediate root
+        // metadata files.
+        if ($modifiedTime && $name !== 'root') {
             // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since.
             $options['http']['header'][] = 'If-Modified-Since: ' . $modifiedTime->format('D, d M Y H:i:s') . ' GMT';
         }
