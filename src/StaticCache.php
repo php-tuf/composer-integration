@@ -29,7 +29,8 @@ class StaticCache implements LoaderInterface
         private readonly LoaderInterface $decorated,
         private readonly IOInterface $io,
         private readonly string $bin,
-    ) {}
+    ) {
+    }
 
     /**
      * {@inheritDoc}

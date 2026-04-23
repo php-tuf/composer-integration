@@ -24,9 +24,9 @@ class LoaderTest extends TestCase
     {
         $loader = function (HttpDownloader $downloader): Loader {
             return new Loader(
-              $downloader,
-              $this->createMock(ComposerFileStorage::class),
-              '/metadata/'
+                $downloader,
+                $this->createMock(ComposerFileStorage::class),
+                '/metadata/'
             );
         };
 

@@ -5,7 +5,6 @@ namespace Tuf\ComposerIntegration;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
-use Composer\Package\PackageInterface;
 use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use Composer\Plugin\Capable;
 use Composer\Plugin\PluginEvents;
@@ -202,8 +201,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     public function getCapabilities()
     {
         return [
-          CommandProviderCapability::class => CommandProvider::class,
+            CommandProviderCapability::class => CommandProvider::class,
         ];
     }
-
 }

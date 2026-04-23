@@ -22,7 +22,8 @@ class Loader implements LoaderInterface
         private HttpDownloader $downloader,
         private ComposerFileStorage $storage,
         private string $baseUrl = ''
-    ) {}
+    ) {
+    }
 
     /**
      * {@inheritDoc}
@@ -85,9 +86,9 @@ class Loader implements LoaderInterface
     private static function versionHeader(): string
     {
         return sprintf(
-          'X-PHP-TUF: client=%s; plugin=%s',
-          InstalledVersions::getVersion('php-tuf/php-tuf'),
-          InstalledVersions::getVersion('php-tuf/composer-integration'),
+            'X-PHP-TUF: client=%s; plugin=%s',
+            InstalledVersions::getVersion('php-tuf/php-tuf'),
+            InstalledVersions::getVersion('php-tuf/composer-integration'),
         );
     }
 }

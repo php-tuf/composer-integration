@@ -35,7 +35,7 @@ class TufValidatedComposerRepository extends ComposerRepository
      *
      * @var ComposerCompatibleUpdater|null
      */
-    private ?ComposerCompatibleUpdater $updater = NULL;
+    private ?ComposerCompatibleUpdater $updater = null;
 
     /**
      * The I/O wrapper.
@@ -59,7 +59,7 @@ class TufValidatedComposerRepository extends ComposerRepository
                 $metadataUrl .= '/';
             }
 
-            $maxBytes = $repoConfig['tuf']['max-bytes'] ?? NULL;
+            $maxBytes = $repoConfig['tuf']['max-bytes'] ?? null;
             if (is_int($maxBytes)) {
                 Repository::$maxBytes = $maxBytes;
             }

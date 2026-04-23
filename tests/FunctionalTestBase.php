@@ -2,7 +2,6 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
-use Composer\Autoload\ClassLoader;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
@@ -18,7 +17,7 @@ abstract class FunctionalTestBase extends TestCase
      *
      * @var \Symfony\Component\Process\Process|null
      */
-    private ?Process $server = NULL;
+    private ?Process $server = null;
 
     private Filesystem $fileSystem;
 
@@ -43,10 +42,10 @@ abstract class FunctionalTestBase extends TestCase
         $this->fixture = new Fixture($this->workingDir);
         $this->fixture->root->consistentSnapshot = true;
         $this->fixture->delegate('targets', 'package_metadata', [
-          'paths' => ['drupal/*.json'],
+            'paths' => ['drupal/*.json'],
         ]);
         $this->fixture->delegate('targets', 'package', [
-          'paths' => ['drupal/*/*'],
+            'paths' => ['drupal/*/*'],
         ]);
         $dir = static::SERVER_ROOT;
         $this->fixture->addTarget("$dir/packages.json");

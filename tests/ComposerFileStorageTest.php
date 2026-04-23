@@ -42,9 +42,9 @@ class ComposerFileStorageTest extends TestCase
     public function testBasePath(): void
     {
         $expectedPath = implode(DIRECTORY_SEPARATOR, [
-           $this->vendorDir,
-           'composer',
-           'tuf',
+            $this->vendorDir,
+            'composer',
+            'tuf',
         ]);
         $config = new Config();
         $this->assertSame($expectedPath, ComposerFileStorage::basePath($config));
@@ -61,7 +61,7 @@ class ComposerFileStorageTest extends TestCase
         $config = new Config();
 
         $basePath = implode(DIRECTORY_SEPARATOR, [
-           ComposerFileStorage::basePath($config),
+            ComposerFileStorage::basePath($config),
             'https---example.net-packages',
         ]);
         $this->assertDirectoryDoesNotExist($basePath);
