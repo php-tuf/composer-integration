@@ -55,14 +55,14 @@ class ApiTest extends FunctionalTestBase
 
         // Composer requires the plugin package to be passed to the plugin manager, so load that from the composer.json
         // at the root of the repository.
-        $source_package = __DIR__ . '/../composer.json';
-        $this->assertFileIsReadable($source_package);
-        $source_package = file_get_contents($source_package);
-        $source_package = json_decode($source_package, true);
+        $sourcePackage = __DIR__ . '/../composer.json';
+        $this->assertFileIsReadable($sourcePackage);
+        $sourcePackage = file_get_contents($sourcePackage);
+        $sourcePackage = json_decode($sourcePackage, true);
         // The package loader will throw an exception if no version is defined.
-        $source_package += ['version' => '1.0.0'];
+        $sourcePackage += ['version' => '1.0.0'];
 
-        $this->composer->getPluginManager()->addPlugin($this->plugin, false, (new ArrayLoader())->load($source_package));
+        $this->composer->getPluginManager()->addPlugin($this->plugin, false, (new ArrayLoader())->load($sourcePackage));
     }
 
     /**
@@ -233,21 +233,21 @@ class ApiTest extends FunctionalTestBase
      * @param string $filename
      *   The filename of the target, as known in the processed URL, relative to
      *   the `targets` directory.
-     * @param int|null $known_size
+     * @param int|null $knownSize
      *   Either a file size that will be returned by TUF, or NULL if the target
      *   is not known to TUF.
-     * @param int $expected_size
+     * @param int $expectedSize
      *   The maximum file size that Composer should end up with.
      *
      * @dataProvider providerPreFileDownload
      */
-    public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
+    public function testPreFileDownload(string $filename, ?int $knownSize, int $expectedSize): void
     {
         $updater = $this->createMock(ComposerCompatibleUpdater::class);
         $updater->expects($this->atLeastOnce())
             ->method('getLength')
             ->with(urldecode($filename))
-            ->willReturnCallback(fn () => $known_size ?? throw new NotFoundException());
+            ->willReturnCallback(fn () => $knownSize ?? throw new NotFoundException());
 
         $repository = $this->mockRepository($updater);
 
@@ -262,7 +262,7 @@ class ApiTest extends FunctionalTestBase
         $this->composer->getEventDispatcher()
             ->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
-        $this->assertSame($expected_size, $options['max_file_size']);
+        $this->assertSame($expectedSize, $options['max_file_size']);
     }
 
     /**
