@@ -20,3 +20,10 @@ To run a single test use PHPUnit's `--filter` option:
 ```
 ddev exec phpunit ./tests --debug --filter=testCannotProtectNonComposerRepository
 ```
+
+## Static analysis
+
+To run PHPStan against the codebase:
+```
+ddev composer phpstan
+```

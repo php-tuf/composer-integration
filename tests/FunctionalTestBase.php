@@ -39,10 +39,6 @@ abstract class FunctionalTestBase extends TestCase
         $this->workingDir = uniqid(sys_get_temp_dir() . '/');
         mkdir($this->workingDir . '/tuf', recursive: true);
 
-        // Make PHP-TUF's fixture builder available.
-        $loaders = ClassLoader::getRegisteredLoaders();
-        reset($loaders)->addPsr4('Tuf\\Tests\\', key($loaders) . '/php-tuf/php-tuf/tests');
-
         // Generate the fixture.
         $this->fixture = new Fixture($this->workingDir);
         $this->fixture->root->consistentSnapshot = true;
