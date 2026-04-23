@@ -39,12 +39,22 @@
         "phpunit/phpunit": "^9.5",
         "symfony/process": "^6",
         "dms/phpunit-arraysubset-asserts": "^0.5.0",
-        "phpstan/phpstan": "^2.1"
+        "phpstan/phpstan": "^2.1",
+        "squizlabs/php_codesniffer": "^4.0",
+        "slevomat/coding-standard": "^8.28"
     },
     "scripts": {
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf",
         "phpstan": "phpstan",
         "test": [
             "phpunit ./tests --debug"
-        ]
+        ],
+        "lint": "find src -name '*.php' -exec php -l {} \\;"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
