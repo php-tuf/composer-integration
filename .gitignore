@@ -1,3 +1,5 @@
+/.phpunit.result.cache
 /composer.lock
 /phpstan.neon
+/var
 /vendor

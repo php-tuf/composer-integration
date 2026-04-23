@@ -44,6 +44,10 @@
         "slevomat/coding-standard": "^8.28"
     },
     "scripts": {
+        "coverage": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --coverage-text --color=always --testdox"
+        ],
         "phpcs": "phpcs",
         "phpcbf": "phpcbf",
         "phpstan": "phpstan",
