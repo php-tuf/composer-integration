@@ -39,8 +39,8 @@ class ProtectCommand extends BaseCommand
 
         $repoToProtect = $input->getArgument('repository');
         foreach ($repositories as $index => $repository) {
-            $name = $repository['name'] ?? NULL;
-            $url = $repository['url'] ?? NULL;
+            $name = $repository['name'] ?? null;
+            $url = $repository['url'] ?? null;
 
             // @TODO: Eventually remove this backward compatibility shim, which deals
             // with composer.json files from Composer versions less than 2.9.
@@ -54,7 +54,7 @@ class ProtectCommand extends BaseCommand
                 if ($repository['type'] !== 'composer') {
                     throw new \RuntimeException("Only Composer repositories can be protected by TUF.");
                 }
-                $data['repositories'][$index]['tuf'] = TRUE;
+                $data['repositories'][$index]['tuf'] = true;
                 $file->write($data);
                 $output->writeln("'" . $repoToProtect . "' is now protected by TUF.");
                 return 0;

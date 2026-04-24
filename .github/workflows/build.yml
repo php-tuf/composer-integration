@@ -34,6 +34,10 @@ jobs:
         run: |
           composer config github-oauth.github.com ${{ secrets.GITHUB_TOKEN }}
           composer install ${{ env.COMPOSER_FLAGS }}
+      - name: PHP linting
+        run: composer lint
+      - name: Run PHPCS
+        run: composer phpcs
       - name: Run tests
         run: vendor/bin/phpunit ./tests --debug
       - name: Check dependencies for known security vulnerabilities

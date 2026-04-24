@@ -55,14 +55,14 @@ class ApiTest extends FunctionalTestBase
 
         // Composer requires the plugin package to be passed to the plugin manager, so load that from the composer.json
         // at the root of the repository.
-        $source_package = __DIR__ . '/../composer.json';
-        $this->assertFileIsReadable($source_package);
-        $source_package = file_get_contents($source_package);
-        $source_package = json_decode($source_package, true);
+        $sourcePackage = __DIR__ . '/../composer.json';
+        $this->assertFileIsReadable($sourcePackage);
+        $sourcePackage = file_get_contents($sourcePackage);
+        $sourcePackage = json_decode($sourcePackage, true);
         // The package loader will throw an exception if no version is defined.
-        $source_package += ['version' => '1.0.0'];
+        $sourcePackage += ['version' => '1.0.0'];
 
-        $this->composer->getPluginManager()->addPlugin($this->plugin, false, (new ArrayLoader())->load($source_package));
+        $this->composer->getPluginManager()->addPlugin($this->plugin, false, (new ArrayLoader())->load($sourcePackage));
     }
 
     /**
@@ -88,15 +88,13 @@ class ApiTest extends FunctionalTestBase
      * @return TufValidatedComposerRepository
      *   The created repository object.
      */
-    private function mockRepository(?Updater $updater = NULL, array $config = []): TufValidatedComposerRepository
+    private function mockRepository(?Updater $updater = null, array $config = []): TufValidatedComposerRepository
     {
         $manager = $this->composer->getRepositoryManager();
 
         $config += [
             'url' => 'http://localhost:8080/targets',
-            'tuf' => [
-                'metadata-url' => 'http://localhost:8080/metadata',
-            ],
+            'tuf' => ['metadata-url' => 'http://localhost:8080/metadata'],
         ];
         $repository = $manager->createRepository('composer', $config);
         $this->setUpdater($repository, $updater ?? $this->createMock(ComposerCompatibleUpdater::class));
@@ -137,9 +135,7 @@ class ApiTest extends FunctionalTestBase
 
             public function getRepoConfig()
             {
-                return [
-                    'url' => 'https://packages.drupal.org/8',
-                ];
+                return ['url' => 'https://packages.drupal.org/8'];
             }
 
             public function configurePackageTransportOptions(PackageInterface $package): void
@@ -165,18 +161,18 @@ class ApiTest extends FunctionalTestBase
         $updater->expects($this->atLeast(2))
             ->method('verify')
             ->with(
-              $this->callback(fn ($target) => $target ==='packages.json' || $target === 'drupal/token/1.9.0.0'),
-              $this->isInstanceOf(StreamInterface::class),
+                $this->callback(fn ($target) => $target ==='packages.json' || $target === 'drupal/token/1.9.0.0'),
+                $this->isInstanceOf(StreamInterface::class),
             );
 
         $repository = $this->mockRepository($updater);
         $url = $repository->getRepoConfig()['url'];
         $package = new CompletePackage('drupal/token', '1.9.0.0', '1.9');
         $package->setTransportOptions([
-           'tuf' => [
-               'repository' => $url,
-               'target' => 'drupal/token/1.9.0.0',
-           ],
+            'tuf' => [
+                'repository' => $url,
+                'target' => 'drupal/token/1.9.0.0',
+            ],
         ]);
         $eventDispatcher = $this->composer->getEventDispatcher();
 
@@ -210,7 +206,8 @@ class ApiTest extends FunctionalTestBase
      * @return array[]
      *   The test cases.
      */
-    public function providerPreFileDownload(): array {
+    public function providerPreFileDownload(): array
+    {
         return [
             'legitimate target' => [
                 'packages.json',
@@ -219,14 +216,14 @@ class ApiTest extends FunctionalTestBase
             ],
             'unknown target' => [
                 'bogus.json',
-                NULL,
+                null,
                 TufValidatedComposerRepository::MAX_404_BYTES,
             ],
             'URL-encoded target' => [
                 'all$random-hash.json',
                 999,
                 999,
-            ]
+            ],
         ];
     }
 
@@ -236,21 +233,21 @@ class ApiTest extends FunctionalTestBase
      * @param string $filename
      *   The filename of the target, as known in the processed URL, relative to
      *   the `targets` directory.
-     * @param int|null $known_size
+     * @param int|null $knownSize
      *   Either a file size that will be returned by TUF, or NULL if the target
      *   is not known to TUF.
-     * @param int $expected_size
+     * @param int $expectedSize
      *   The maximum file size that Composer should end up with.
      *
      * @dataProvider providerPreFileDownload
      */
-    public function testPreFileDownload(string $filename, ?int $known_size, int $expected_size): void
+    public function testPreFileDownload(string $filename, ?int $knownSize, int $expectedSize): void
     {
         $updater = $this->createMock(ComposerCompatibleUpdater::class);
         $updater->expects($this->atLeastOnce())
             ->method('getLength')
             ->with(urldecode($filename))
-            ->willReturnCallback(fn () => $known_size ?? throw new NotFoundException());
+            ->willReturnCallback(fn () => $knownSize ?? throw new NotFoundException());
 
         $repository = $this->mockRepository($updater);
 
@@ -260,14 +257,12 @@ class ApiTest extends FunctionalTestBase
             $this->composer->getLoop()->getHttpDownloader(),
             "http://localhost:8080/targets/" . urlencode($filename),
             'metadata',
-            [
-                'repository' => $repository,
-            ]
+            ['repository' => $repository]
         );
         $this->composer->getEventDispatcher()
             ->dispatch($event->getName(), $event);
         $options = $event->getTransportOptions();
-        $this->assertSame($expected_size, $options['max_file_size']);
+        $this->assertSame($expectedSize, $options['max_file_size']);
     }
 
     /**
@@ -279,7 +274,7 @@ class ApiTest extends FunctionalTestBase
 
         // At least one Composer repository should be loaded.
         $repositories = array_filter($manager->getRepositories(), function ($repository) {
-           return $repository instanceof ComposerRepository;
+            return $repository instanceof ComposerRepository;
         });
         $this->assertNotEmpty($repositories);
 
@@ -289,9 +284,7 @@ class ApiTest extends FunctionalTestBase
         }
 
         // The TUF driver should also be used when creating a new Composer repository.
-        $repository = $manager->createRepository('composer', [
-           'url' => 'https://packagist.example.net',
-        ]);
+        $repository = $manager->createRepository('composer', ['url' => 'https://packagist.example.net']);
         $this->assertInstanceOf(TufValidatedComposerRepository::class, $repository);
     }
 
@@ -300,9 +293,7 @@ class ApiTest extends FunctionalTestBase
         $updater = $this->createMock(ComposerCompatibleUpdater::class);
         $this->mockRepository($updater, [
             'url' => 'http://localhost',
-            'tuf' => [
-                'max-bytes' => 123,
-            ],
+            'tuf' => ['max-bytes' => 123],
         ]);
         $this->assertSame(123, Repository::$maxBytes);
     }
@@ -328,21 +319,17 @@ class ApiTest extends FunctionalTestBase
         $updater->expects($this->atLeast(2))
             ->method('getLength')
             ->willReturnMap([
-              ['packages.json', 39],
-              ['another/target.json', 59],
+                ['packages.json', 39],
+                ['another/target.json', 59],
             ]);
 
-        $repository = $this->mockRepository($updater, [
-            'url' => 'http://localhost/repo',
-        ]);
+        $repository = $this->mockRepository($updater, ['url' => 'http://localhost/repo']);
         $event = new PreFileDownloadEvent(
             PluginEvents::PRE_FILE_DOWNLOAD,
             $this->composer->getLoop()->getHttpDownloader(),
             "http://localhost/repo/packages.json",
             'metadata',
-            [
-                'repository' => $repository,
-            ]
+            ['repository' => $repository]
         );
         $repository->prepareComposerMetadata($event);
         $this->assertSame(39, $event->getTransportOptions()['max_file_size']);

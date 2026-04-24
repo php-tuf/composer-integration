@@ -2,7 +2,6 @@
 
 namespace Tuf\ComposerIntegration\Tests;
 
-use Composer\Autoload\ClassLoader;
 use Composer\Util\Filesystem;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
@@ -18,7 +17,7 @@ abstract class FunctionalTestBase extends TestCase
      *
      * @var \Symfony\Component\Process\Process|null
      */
-    private ?Process $server = NULL;
+    private ?Process $server = null;
 
     private Filesystem $fileSystem;
 
@@ -43,10 +42,10 @@ abstract class FunctionalTestBase extends TestCase
         $this->fixture = new Fixture($this->workingDir);
         $this->fixture->root->consistentSnapshot = true;
         $this->fixture->delegate('targets', 'package_metadata', [
-          'paths' => ['drupal/*.json'],
+            'paths' => ['drupal/*.json'],
         ]);
         $this->fixture->delegate('targets', 'package', [
-          'paths' => ['drupal/*/*'],
+            'paths' => ['drupal/*/*'],
         ]);
         $dir = static::SERVER_ROOT;
         $this->fixture->addTarget("$dir/packages.json");
@@ -132,14 +131,14 @@ abstract class FunctionalTestBase extends TestCase
      *
      * @param string[] $arguments
      *   The arguments to pass to Composer.
-     * @param int $expected_exit_code
+     * @param int $expectedExitCode
      *   (optional) The expected status code when the process completes.
      *   Defaults to 0.
      *
      * @return Process
      *   The process object.
      */
-    protected function composer(array $arguments, int $expected_exit_code = 0): Process
+    protected function composer(array $arguments, int $expectedExitCode = 0): Process
     {
         // Ensure the current PHP runtime is used to execute Composer.
         array_unshift($arguments, PHP_BINARY, __DIR__ . '/../vendor/composer/composer/bin/composer');
@@ -148,9 +147,9 @@ abstract class FunctionalTestBase extends TestCase
 
         $process = new Process($arguments, $this->workingDir);
         $process->run();
-        $assertionError = $process->getErrorOutput() . "\n" . "Composer exited with {$process->getExitCode()}, expected $expected_exit_code.";
+        $assertionError = $process->getErrorOutput() . "\n" . "Composer exited with {$process->getExitCode()}, expected $expectedExitCode.";
 
-        static::assertSame($expected_exit_code, $process->getExitCode(), $assertionError);
+        static::assertSame($expectedExitCode, $process->getExitCode(), $assertionError);
         // There should not be any deprecation warnings.
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getOutput());
         static::assertStringNotContainsStringIgnoringCase('deprecated', $process->getErrorOutput());
