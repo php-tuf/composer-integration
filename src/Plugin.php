@@ -26,6 +26,13 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     private RepositoryManager $repositoryManager;
 
     /**
+     * The IO interface for logging.
+     *
+     * @var IOInterface
+     */
+    private IOInterface $io;
+
+    /**
      * {@inheritDoc}
      */
     public static function getSubscribedEvents(): array
@@ -47,6 +54,10 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
      */
     public function preFileDownload(PreFileDownloadEvent $event): void
     {
+
+        $url = $event->getProcessedUrl();
+        $this->io->notice("[TUF] Attempting to download target: $url");
+
         $type = $event->getType();
         $repository = $this->getRepositoryFromEvent($event);
 
@@ -117,6 +128,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface, Capable
     public function activate(Composer $composer, IOInterface $io): void
     {
         $io->debug('TUF integration enabled.');
+        $this->io = $io;
 
         // By the time this plugin is activated, several repositories may have
         // already been instantiated, and we need to convert them to
